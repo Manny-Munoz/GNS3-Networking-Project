@@ -155,7 +155,7 @@ Each router is connected to its local switch through interface `f0/1`, and to th
 README is available in:
 
 * English 🇺🇸 *(You are here)*
-* [Español 🇪🇸](README_es.md)
+* [Español 🇪🇸](readme_es.md)
 
 
 
