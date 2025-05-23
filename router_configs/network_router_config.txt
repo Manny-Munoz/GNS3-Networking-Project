@@ -1,0 +1,228 @@
+enable 
+configure terminal
+
+hostname R-Common
+
+interface f0/0
+ ip address 172.16.100.254 255.255.255.0
+ ip nat inside
+ no shutdown
+
+interface f1/0
+ ip address dhcp
+ ip nat outside
+ no shutdown
+ 
+ 
+ip nat inside source list 1 interface f1/0 overload
+
+access-list 1 permit 172.16.0.0 0.0.255.255 
+access-list 1 permit 10.10.16.0 0.0.0.255
+access-list 1 permit 192.168.20.0 0.0.0.63
+
+ip route 0.0.0.0 0.0.0.0 dhcp
+
+router rip
+ version 2
+ network 172.16.0.0
+ network 10.10.16.0
+ network 192.168.20.0
+
+exit
+
+router rip
+ version 2
+ no auto-summary
+
+exit
+
+do write
+
+exit
+
+ping 8.8.8.8
+
+
+---------Router-Miami-----------
+enable 
+configure terminal
+hostname R-MIA
+
+int f0/0
+ip add 172.16.250.2 255.255.255.252
+description To_R-MEX
+no shut
+exit
+
+int f0/1
+ip add 172.16.0.1 255.255.252.0
+description To_SW-MIA
+no shut
+exit
+
+
+interface f2/0
+description To_R-Common
+ ip address 172.16.100.11 255.255.255.0
+ no shut
+exit
+
+ip route 0.0.0.0 0.0.0.0 172.16.100.254  
+
+do write
+
+exit 
+
+ping 8.8.8.8
+
+---------Router-Mexico-----------
+enable 
+configure terminal
+hostname R-MEX
+
+int f0/0
+ip add 172.16.250.1 255.255.255.252
+description To_R-MIA
+no shut
+exit
+
+int f0/1
+ip add 172.16.10.1 255.255.254.0
+description To_SW-MEX
+no shut
+exit
+
+int f1/0
+ip add 172.16.250.6 255.255.255.252
+description To_R-GUA
+no shut
+exit
+
+
+
+
+interface f2/0
+description To_R-Common
+ ip address 172.16.100.12 255.255.255.0
+ no shut
+exit
+
+ip route 0.0.0.0 0.0.0.0 172.16.100.254  
+
+do write
+
+exit 
+
+ping 8.8.8.8
+
+--------- Router-Guatemala-----------
+enable 
+configure terminal
+hostname R-GUA
+
+int f0/0
+ip add 172.16.250.5 255.255.255.252
+description To_R-MEX
+no shut
+exit
+
+int f0/1
+ip add 10.10.16.1 255.255.240.0
+description To_SW-GUA
+no shut
+exit
+
+int f1/0
+ip add 172.16.250.10 255.255.255.252
+description To_R-CRC
+no shut
+exit
+
+
+interface f2/0
+description To_R-Common
+ ip address 172.16.100.13 255.255.255.0
+ no shut
+exit
+
+ip route 0.0.0.0 0.0.0.0 172.16.100.254  
+do write
+
+exit 
+
+ping 8.8.8.8
+
+---------Router-Costa-Rica-----------
+enable 
+configure terminal
+hostname R-CRC
+
+int f0/0
+ip add 172.16.250.9 255.255.255.252
+description To_R-GUA
+no shut
+exit
+
+int f0/1
+ip add 192.168.20.1 255.255.255.192
+description To_SW-CRC
+no shut
+exit
+
+
+
+interface f2/0
+description To_R-Common
+ ip address 172.16.100.14 255.255.255.0
+ no shut
+exit
+
+ip route 0.0.0.0 0.0.0.0 172.16.100.254  
+do write
+
+exit 
+
+ping 8.8.8.8
+
+-------Router-Miami RIP--------
+enable
+configure terminal
+router rip
+version 2
+network 172.16.0.0
+network 172.16.250.0
+do show ip route
+do write
+
+
+-------Router-Mexico RIP--------
+enable
+configure terminal
+router rip
+version 2
+network 172.16.10.0
+network 172.16.250.0
+do show ip route
+do write
+
+-------Router-Guatemala RIP--------
+enable
+configure terminal
+router rip
+version 2
+network 10.10.16.0
+network 172.16.250.0
+do show ip route
+do write
+
+-------Router-Costa Rica RIP--------
+enable
+configure terminal
+router rip
+version 2
+network 192.168.20.0
+network 172.16.250.0
+do show ip route
+do write
+
+
