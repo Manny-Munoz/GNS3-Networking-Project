@@ -1,0 +1,41 @@
+/*
+This file defines the four DNS zones used in this project: gt.com, cr.com, mx.com, and us.com.
+
+IMPORTANT:
+- When you need to configure one of these zones (for example, "gt.com") as a master zone on a specific server, you **must delete or comment out the corresponding "gt.com" forward zone** from this file.
+- After removing the forward zone for that domain, follow the instructions below to include this file in your server configuration. Once done, continue with the manual in readme.md or refer to the db.example.com file for further configuration steps.
+
+How to use this file:
+- On Debian/Ubuntu:
+    1. Move this file to /etc/bind/:
+       mv ./named.conf.zones /etc/bind/
+    2. Add the following line to /etc/bind/named.conf:
+       include "/etc/bind/named.conf.zones";
+
+- On openSUSE or Rocky Linux:
+    1. Move this file to /etc/named/:
+       mv ./named.conf.zones /etc/named/
+    2. Add the following line to /etc/named.conf:
+       include "/etc/named/named.conf.zones";
+*/
+
+
+zone "gt.com" {
+    type forward;
+    forwarders { 10.10.16.10; }; // Guatemala
+};
+
+zone "cr.com" {
+    type forward;
+    forwarders { 192.168.20.10; }; // Costa Rica
+};
+
+zone "mx.com" {
+    type forward;
+    forwarders { 172.16.10.10; }; // México
+};
+
+zone "us.com" {
+    type forward;
+    forwarders { 172.16.0.10; }; // Miami
+};
