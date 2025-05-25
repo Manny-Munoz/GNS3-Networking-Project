@@ -27,6 +27,7 @@ install_cms() {
         wget -q "$url" -O "$name.tar.gz"
         tar -xzf "$name.tar.gz" --strip-components=1
         rm "$name.tar.gz"
+    fi
 
     chown -R "$USERWEB:$USERWEB" "$SITE_DIR"
     chmod -R 755 "$SITE_DIR"
@@ -69,6 +70,8 @@ case "$ID" in
         apt install -y apache2 mariadb-server mariadb-client
         apt install -y php libapache2-mod-php php-mysql php-cli php-curl php-xml php-mbstring php-imap php-apcu php-intl php-gd
         apt install -y phpmyadmin
+
+        /usr/bin/mysql_secure_installation
         # SSL 
         apt install openssl ca-certificates
         # FTP
@@ -86,6 +89,7 @@ case "$ID" in
         apt install -y iptables fail2ban logrotate chkrootkit postfix
         # Monitoring and administration tools
         apt install -y htop vnstat iproute2 cron mailutils tmux
+        mv ../config_files/tmux.conf /etc/tmux.conf
         # Network tools
         sudo apt install ipcalc
         # file management
@@ -152,6 +156,8 @@ case "$ID" in
         dnf install -y httpd mariadb-server mariadb
         dnf install -y php php-mysqlnd php-cli php-curl php-xml php-mbstring php-gd php-intl php-imap php-json php-common php-opcache
 
+        /usr/bin/mysql_secure_installation
+
         echo "Installing OpenSSL and root certificates..."
         dnf install -y openssl ca-certificates
 
@@ -209,6 +215,8 @@ case "$ID" in
 
         # Terminal multiplexer (allows splitting sessions, very useful via SSH)
         dnf install -y tmux
+
+        mv ../config_files/tmux.conf /etc/tmux.conf
 
         # Fast file searcher with database
         dnf install -y mlocate
@@ -268,6 +276,9 @@ case "$ID" in
         echo "Installing Apache, MariaDB and PHP..."
         zypper install -y apache2 mariadb
         zypper install -y php7 php7-mysql php7-cli php7-curl php7-xml php7-mbstring php7-gd php7-intl
+
+        /usr/bin/mysql_secure_installation
+
 
         # Composer
         if ! command -v composer >/dev/null; then
@@ -336,6 +347,7 @@ case "$ID" in
         zypper install net-tools        # Classic network tools
         zypper install mc               # Midnight Commander file manager
         zypper install tmux             # Terminal multiplexer
+        mv ../config_files/tmux.conf /etc/tmux.conf
         zypper install mlocate          # Fast file searcher
         updatedb                        # Update file search database
         zypper install git nodejs npm python3 python3-pip   # Development tools
