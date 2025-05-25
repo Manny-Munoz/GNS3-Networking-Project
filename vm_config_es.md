@@ -341,4 +341,9 @@ Para agregar routers:
 
 ---
 
+vm_config está disponible en:
+
+* Español 🇪🇸 *(Estás aquí)*
+* [English 🇺🇸](vm_config.md)
+
 Si tienes preguntas o necesitas más detalles, consulta el README principal o los archivos de configuración de routers.

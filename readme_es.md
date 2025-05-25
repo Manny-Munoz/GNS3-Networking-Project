@@ -25,7 +25,7 @@ Este repositorio contiene una práctica completa para el diseño y configuració
 
 A continuación se muestra la vista real de la topología dentro de GNS3:
 
-![Topología GNS3](images/gns3_topology_screenshot.png)
+![Topología GNS3](images/captura_topologia_gns3.png)
 
 ---
 
@@ -108,7 +108,7 @@ Estos servidores fueron configurados usando el [script de instalación](scripts/
 |-------------------------------------------------|------------------------------------------------------------------|
 | [configure_static_network.sh](scripts/configure_static_network.sh) | Configuraciones completas de los routers Cisco utilizados        |
 | [install_dependencies.sh](scripts/install_dependencies.sh)         | Script automatizado para configurar servicios en servidores Linux |
-| [vm_config.md](vm_config.md)                                   | Documentación de las VMs utilizadas (ISOs, versiones, configuración) |
+| [vm_config_es.md](vm_config_es.md)                                   | Documentación de las VMs utilizadas (ISOs, versiones, configuración) |
 
 ## 🔗 Conexión con el exterior
 

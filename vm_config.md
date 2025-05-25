@@ -156,3 +156,8 @@ To add routers:
 - This project is for educational and personal use only.
 
 ---
+
+vm_config is available in:
+
+* English 🇺🇸 *(You are here)*
+* [Español 🇪🇸](vm_config_es.md)
