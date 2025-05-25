@@ -15,7 +15,8 @@ This repository contains a complete practice for designing and configuring a dis
 - [🔗 External Connection](#-external-connection)
 - [📚 Requirements](#-requirements)
 - [Interface and Connection Documentation](#interface-and-connection-documentation)
-- [🖥️ Interface Connections Documentation](#-interface-connections-documentation)
+- [🚀 Usage](#-usage)
+- [🖥️️️️ ️Interface Connections Documentation](#-interface-connections-documentation)
 - [⚖️ License](#-license)
 
 ---
@@ -147,6 +148,222 @@ Below is a summary of which interface connects each router and switch, to simpli
 - All servers and workstations connect to their respective regional switch.
 - The "Cloud" node in GNS3 represents the Internet connection.
 
+
+## 🚀 Usage
+
+### 1. Execute the install_dependencies.sh script
+
+First, give execution permissions and run the script according to your OS.
+
+**For Ubuntu/Rocky/openSUSE:**
+```bash
+sudo chmod +x ./scripts/install_dependencies.sh
+sudo ./scripts/install_dependencies.sh
+```
+
+**For Debian:**
+```bash
+su -
+chmod +x ./scripts/install_dependencies.sh
+./scripts/install_dependencies.sh
+```
+
+---
+
+### 2. Run configure_static_network.sh
+
+**For Ubuntu/Rocky/openSUSE:**
+```bash
+sudo chmod +x ./scripts/configure_static_network.sh
+sudo ./scripts/configure_static_network.sh
+```
+
+**For Debian:**
+```bash
+su -
+chmod +x ./scripts/configure_static_network.sh
+./scripts/configure_static_network.sh
+```
+
+---
+
+### 3. Create the CMS database and user
+
+Depending on the CMS you are using, you will need to edit certain parameters in the `create_user.sql` script (such as the database name, username, and password).  
+After making the necessary changes, you can execute the script with:
+
+```bash
+mariadb -u root -p < create_user.sql
+```
+For more details and examples, refer directly to the `create_user.sql` file, which contains additional useful information and guidance.
+
+---
+
+### 4. Configure DNS zones with named.conf.zones
+
+Use the `named.conf.zones` file to configure your DNS zones.  
+This file defines the four DNS zones used in this project: `gt.com`, `cr.com`, `mx.com`, and `us.com`.
+
+**IMPORTANT:**  
+If you need to configure one of these zones (for example, `gt.com`) as a master zone on a specific server, you **must delete or comment out the corresponding `gt.com` forward zone** from this file.  
+After removing the forward zone for that domain, follow the instructions below to include this file in your server configuration. Once done, continue with the manual in `readme.md` or refer to the `db.example.com` file for further configuration steps.
+
+**How to use this file:**
+
+- **On Debian/Ubuntu:**
+    1. Move this file to `/etc/bind/`:
+       ```bash
+       mv ./named.conf.zones /etc/bind/
+       ```
+    2. Add the following line to `/etc/bind/named.conf`:
+       ```
+       include "/etc/bind/named.conf.zones";
+       ```
+
+- **On openSUSE or Rocky Linux:**
+    1. Move this file to `/etc/named/`:
+       ```bash
+       mv ./named.conf.zones /etc/named/
+       ```
+    2. Add the following line to `/etc/named.conf`:
+       ```
+       include "/etc/named/named.conf.zones";
+       ```
+---
+
+#### Example: Creating a master zone file
+
+You can use the provided `db.example.com` as a template for your zone files.  
+Modify the "gt" part to match your country code (e.g., "cr", "us", "mx") and update the IP addresses as needed.  
+After making your changes, rename the file to match the zone (e.g., `db.gt.com`).
+
+- **On Debian/Ubuntu:**
+    - Move the file:
+      ```bash
+      mv ./db.gt.com /etc/bind/
+      ```
+    - Add the zone to `/etc/bind/named.conf.local`:
+      ```
+      zone "gt.com" {
+        type master;
+        file "/etc/bind/db.gt.com";
+      };
+      ```
+
+- **On Rocky Linux:**
+    - Move the file:
+      ```bash
+      mv ./db.gt.com /var/named/
+      ```
+    - Add the zone to `/etc/named.conf`:
+      ```
+      zone "gt.com" {
+        type master;
+        file "/var/named/db.gt.com";
+      };
+      ```
+
+- **On openSUSE:**
+    - Move the file:
+      ```bash
+      mv ./db.gt.com /var/lib/named/
+      ```
+    - Add the zone to `/etc/named.conf`:
+      ```
+      zone "gt.com" {
+        type master;
+        file "/var/lib/named/db.gt.com";
+      };
+      ```
+
+For more details, see the comments in the `named.conf.zones` and `db.example.com` files.
+
+### 5. Configure NTP Server and Clients
+
+#### NTP configuration for Ubuntu Server/Debian (using `ntpd`)
+
+Use the `server.ntp.conf` file located at `./config_files/ntp/server.ntp.conf` to configure your NTP server.
+
+This file is designed for Debian/Ubuntu systems and configures the NTP daemon to synchronize time with external servers.  
+You can modify the `pool` lines to use your preferred NTP servers if needed.
+
+**Example from `./config_files/ntp/server.ntp.conf`:**
+```conf
+pool 0.debian.pool.ntp.org iburst
+pool 1.debian.pool.ntp.org iburst
+pool 2.debian.pool.ntp.org iburst
+pool 3.debian.pool.ntp.org iburst
+```
+
+After editing (or if you wish to use the default), move the file to the correct location:
+```bash
+cd ./config_files/ntp
+sudo mv server.ntp.conf /etc/ntp.conf
+```
+
+- To apply changes, restart the NTP service:
+  ```bash
+  sudo systemctl restart ntp
+  ```
+- To check synchronization status:
+  ```bash
+  sudo ntpq -p
+  sudo ntpstat
+  ```
+
+---
+
+#### NTP configuration for openSUSE/Rocky Linux (using `chrony`)
+
+Use the `server.client.ntp.conf` file at `./config_files/ntp/server.client.ntp.conf` to configure Chrony.
+
+This file is for openSUSE and Rocky Linux systems using Chrony.  
+It should reference the IP addresses or hostnames of your Debian/Ubuntu NTP servers.
+
+After editing, move the file to the correct location:
+```bash
+sudo mv ./config_files/ntp/server.client.ntp.conf /etc/chrony.conf
+```
+
+- To apply changes, restart the Chrony service:
+  ```bash
+  sudo systemctl restart chronyd
+  ```
+- To check synchronization status:
+  ```bash
+  chronyc tracking
+  chronyc sources -v
+  ```
+
+---
+
+#### NTP configuration for LocOS (or any Linux client using `ntpd`)
+
+For LocOS or other Linux clients using `ntpd`, use the `client.ntp.conf` file at `./config_files/ntp/client.ntp.conf`.
+
+Edit the file to use the appropriate NTP server for your region (e.g., `quetzal.ntp.gt.com`, `quetzal.ntp.cr.com`, `quetzal.ntp.mx.com`, etc.).  
+After editing, move the file to the correct location:
+
+```bash
+cd ./config_files/ntp
+sudo mv client.ntp.conf /etc/ntp.conf
+```
+
+- Restart the NTP service after changes:
+  ```bash
+  sudo systemctl restart ntp
+  ```
+- Check status:
+  ```bash
+  sudo ntpq -p
+  sudo ntpstat
+  ```
+
+---
+
+For more information, see the documentation and examples in the `./config_files/ntp/` directory.
+
+---
 
 ## 🖥️ Interface Connections Documentation
 
