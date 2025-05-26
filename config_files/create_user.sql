@@ -6,7 +6,7 @@
 -- mariadb -u root -p < create_user.sql
 -- Replace 'password here' with a strong password of your choice.
 
-CREATE DATABASE cms_db;
+CREATE DATABASE IF NOT EXISTS cms_db;
 CREATE USER 'cms_user'@'localhost' IDENTIFIED BY 'password here';
-GRANT ALL PRIVILEGES ON php_base_de_datos.* TO 'phpadmin'@'localhost' WITH GRANT OPTION;
+GRANT ALL PRIVILEGES ON cms_db.* TO 'cms_user'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
