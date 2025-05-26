@@ -2,6 +2,11 @@
 
 set -e
 
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root"
+    exit 1
+fi
+
 # Detect OS
 if [ -f /etc/os-release ]; then
     . /etc/os-release
@@ -13,17 +18,37 @@ fi
 
 echo "Detected distro: $DISTRO"
 
+establish_dhcp() {
+cat <<EOF
+subnet $SUBNET netmask $NETMASK {
+    range $DHCP_START $DHCP_END;
+    option routers $GATEWAY;
+    option subnet-mask $NETMASK;
+    option domain-name-servers $DNS;
+    default-lease-time 600;
+    max-lease-time 7200;
+}
+EOF
+}
+
+ip2int() {
+    local IFS=.
+    read -r i1 i2 i3 i4 <<< "$1"
+    echo $(( (i1 * 16777216) + (i2 * 65536) + (i3 * 256) + i4 ))
+}
+
 ip_in_subnet() {
     local ip=$1
     local subnet=$2
     local mask=$3
-    local ip2int subnet2int mask2int
-    ip2int=$(printf "%u\n" $(ipcalc -n "$ip" | grep Address | awk '{print $2}' | tr . ' '))
-    subnet2int=$(printf "%u\n" $(ipcalc -n "$subnet" | grep Address | awk '{print $2}' | tr . ' '))
-    mask2int=$(printf "%u\n" $(ipcalc -n "$mask" | grep Netmask | awk '{print $2}' | tr . ' '))
-    [[ $((ip2int & mask2int)) -eq $((subnet2int & mask2int)) ]]
-}
+    local ip_dec subnet_dec mask_dec
 
+    ip_dec=$(ip2int "$ip")
+    subnet_dec=$(ip2int "$subnet")
+    mask_dec=$(ip2int "$mask")
+
+    [[ $((ip_dec & mask_dec)) -eq $((subnet_dec & mask_dec)) ]]
+}
 
 # Ask user for required data
 read -p "Interface name (e.g. ens3, eth0): " IFACE
@@ -38,19 +63,26 @@ read -p "DHCP Range end (e.g. 172.16.0.100): " DHCP_END
 # Calculate subnet using ipcalc
 SUBNET=$(ipcalc -n "$ADDRESS" "$NETMASK" | grep Network | awk '{print $2}' | cut -d'/' -f1)
 
+
+ADDR_INT=$(ip2int "$ADDRESS")
+DHCP_START_INT=$(ip2int "$DHCP_START")
+if (( ADDR_INT + 2 > DHCP_START_INT )); then
+    echo "❌ ERROR: The IP address should be at least 2 numbers less than the DHCP_Start."
+    exit 1
+fi
+
 # Validate DHCP range
 if ! ip_in_subnet "$DHCP_START" "$SUBNET" "$NETMASK" || ! ip_in_subnet "$DHCP_END" "$SUBNET" "$NETMASK"; then
     echo "❌ ERROR: The DHCP range does not match the subnet $SUBNET/$NETMASK"
     exit 1
 fi
 
-
 case "$DISTRO" in
 
 debian | ubuntu)
     echo "Configuring network for Debian/Ubuntu..."
 
-    if grep -qi ubuntu /etc/os-release && [ -d /etc/netplan ]; then
+    if [ -d /etc/netplan ]; then
         NETPLAN_FILE="/etc/netplan/50-cloud-init.yaml"
         if [ ! -f "$NETPLAN_FILE" ]; then
             NETPLAN_FILE="/etc/netplan/01-netcfg.yaml"
@@ -96,16 +128,7 @@ EOF
 
     echo "INTERFACESv4=\"$IFACE\"" >/etc/default/isc-dhcp-server
 
-    cat <<EOF >/etc/dhcp/dhcpd.conf
-subnet $SUBNET netmask $NETMASK {
-    range $DHCP_START $DHCP_END;
-    option routers $GATEWAY;
-    option subnet-mask $NETMASK;
-    option domain-name-servers $DNS;
-    default-lease-time 600;
-    max-lease-time 7200;
-}
-EOF
+    establish_dhcp > /etc/dhcp/dhcpd.conf
 
     systemctl restart isc-dhcp-server
     systemctl status isc-dhcp-server
@@ -124,19 +147,12 @@ NETMASK='$NETMASK'
 GATEWAY='$GATEWAY'
 EOF
 
-    echo "nameserver $DNS" >/etc/resolv.conf
+    if ! grep -q "$DNS" /etc/resolv.conf; then
+    echo "nameserver $DNS" > /etc/resolv.conf
+    fi
 
-    # Configure DHCP server
-    cat <<EOF >/etc/dhcpd.conf
-subnet $SUBNET netmask $NETMASK {
-    range $DHCP_START $DHCP_END;
-    option routers $GATEWAY;
-    option subnet-mask $NETMASK;
-    option domain-name-servers $DNS;
-    default-lease-time 600;
-    max-lease-time 7200;
-}
-EOF
+
+    establish_dhcp > /etc/dhcpd.conf
 
     systemctl enable dhcpd
     systemctl restart wicked
@@ -161,17 +177,7 @@ EOF
 
     echo "nameserver $DNS" >/etc/resolv.conf
 
-    # Configure DHCP server
-    cat <<EOF >/etc/dhcp/dhcpd.conf
-subnet $SUBNET netmask $NETMASK {
-    range $DHCP_START $DHCP_END;
-    option routers $GATEWAY;
-    option subnet-mask $NETMASK;
-    option domain-name-servers $DNS;
-    default-lease-time 600;
-    max-lease-time 7200;
-}
-EOF
+    establish_dhcp > /etc/dhcp/dhcpd.conf
 
     systemctl enable dhcpd
     echo "Restarting network..."
