@@ -55,7 +55,7 @@ IPprefix_by_netmask () {
    while [ $x -gt 0 ]; do
        let c+=$((x%2)) 'x>>=1'
    done
-   echo /$c ; 
+   echo $c ; 
 }
 
 # Ask user for required data
@@ -105,9 +105,10 @@ network:
       dhcp4: no
       addresses: 
         - $ADDRESS/$(IPprefix_by_netmask "$NETMASK")
+        - ($ADDRESS + 1)/$(IPprefix_by_netmask "$NETMASK")
       routes: 
         - to: default
-        via: $GATEWAY
+          via: $GATEWAY
       nameservers:
         addresses: 
             - $DNS
