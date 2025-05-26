@@ -37,6 +37,16 @@ ip2int() {
     echo $(( (i1 * 16777216) + (i2 * 65536) + (i3 * 256) + i4 ))
 }
 
+int2ip() {
+    local ip=$1
+    local o1 o2 o3 o4
+    o1=$(( (ip >> 24) & 255 ))
+    o2=$(( (ip >> 16) & 255 ))
+    o3=$(( (ip >> 8) & 255 ))
+    o4=$(( ip & 255 ))
+    echo "$o1.$o2.$o3.$o4"
+}
+
 ip_in_subnet() {
     local ip=$1
     local subnet=$2
@@ -79,6 +89,10 @@ if (( ADDR_INT + 2 > DHCP_START_INT )); then
     exit 1
 fi
 
+# Create Samba IP address
+SAMBA_ADDRESS=$(int2ip $((ADDR_INT + 1)))
+echo "Samba IP address will be: $SAMBA_ADDRESS"
+
 # Validate DHCP range
 if ! ip_in_subnet "$DHCP_START" "$SUBNET" "$NETMASK" || ! ip_in_subnet "$DHCP_END" "$SUBNET" "$NETMASK"; then
     echo "❌ ERROR: The DHCP range does not match the subnet $SUBNET/$NETMASK"
@@ -105,7 +119,7 @@ network:
       dhcp4: no
       addresses: 
         - $ADDRESS/$(IPprefix_by_netmask "$NETMASK")
-        - ($ADDRESS + 1)/$(IPprefix_by_netmask "$NETMASK")
+        - $SAMBA_ADDRESS/$(IPprefix_by_netmask "$NETMASK")
       routes: 
         - to: default
           via: $GATEWAY
@@ -128,6 +142,7 @@ iface $IFACE inet static
     netmask $NETMASK
     gateway $GATEWAY
     dns-nameservers $DNS
+    post-up ip addr add $SAMBA_ADDRESS/$(IPprefix_by_netmask "$NETMASK") dev $IFACE
 EOF
 
         echo "Restarting networking..."
@@ -147,15 +162,16 @@ EOF
 opensuse* | suse)
     echo "Configuring network for openSUSE..."
 
+CONFIG_FILE="/etc/sysconfig/network/ifcfg-$IFACE"
 
-    CONFIG_FILE="/etc/sysconfig/network/ifcfg-$IFACE"
-
-    cat <<EOF >$CONFIG_FILE
+cat <<EOF >$CONFIG_FILE
 BOOTPROTO='static'
 STARTMODE='auto'
 IPADDR='$ADDRESS'
 NETMASK='$NETMASK'
 GATEWAY='$GATEWAY'
+IPADDR_2='$SAMBA_ADDRESS'
+NETMASK_2='$NETMASK'
 EOF
 
     if ! grep -q "$DNS" /etc/resolv.conf; then
@@ -175,16 +191,18 @@ rocky | centos | rhel)
     echo "Configuring network for Rocky Linux/CentOS/RHEL..."
 
     CONFIG_FILE="/etc/sysconfig/network-scripts/ifcfg-$IFACE"
-
+    
     cat <<EOF >$CONFIG_FILE
-DEVICE=$IFACE
-BOOTPROTO=static
-ONBOOT=yes
-IPADDR=$ADDRESS
-NETMASK=$NETMASK
-GATEWAY=$GATEWAY
-DNS1=$DNS
-EOF
+    DEVICE=$IFACE
+    BOOTPROTO=static
+    ONBOOT=yes
+    IPADDR=$ADDRESS
+    NETMASK=$NETMASK
+    GATEWAY=$GATEWAY
+    DNS1=$DNS
+    IPADDR2=$SAMBA_ADDRESS
+    NETMASK2=$NETMASK
+    EOF
 
     echo "nameserver $DNS" >/etc/resolv.conf
 
