@@ -192,17 +192,17 @@ rocky | centos | rhel)
 
     CONFIG_FILE="/etc/sysconfig/network-scripts/ifcfg-$IFACE"
     
-    cat <<EOF >$CONFIG_FILE
-    DEVICE=$IFACE
-    BOOTPROTO=static
-    ONBOOT=yes
-    IPADDR=$ADDRESS
-    NETMASK=$NETMASK
-    GATEWAY=$GATEWAY
-    DNS1=$DNS
-    IPADDR2=$SAMBA_ADDRESS
-    NETMASK2=$NETMASK
-    EOF
+cat <<EOF >$CONFIG_FILE
+DEVICE=$IFACE
+BOOTPROTO=static
+ONBOOT=yes
+IPADDR=$ADDRESS
+NETMASK=$NETMASK
+GATEWAY=$GATEWAY
+DNS1=$DNS
+IPADDR2=$SAMBA_ADDRESS
+NETMASK2=$NETMASK
+EOF
 
     echo "nameserver $DNS" >/etc/resolv.conf
 
