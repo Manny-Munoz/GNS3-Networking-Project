@@ -1,0 +1,27 @@
+options {
+	
+	// Opensuse 
+	// directory "/var/lib/named";
+	// Rocky Linux / Centos
+	// directory "/var/named";
+	// Debian / Ubuntu 
+	// directory "/var/cache/bind";	
+
+	recursion yes;
+
+	allow-query { any; };
+
+
+	forwarders {
+	 	8.8.8.8;
+	 	1.1.1.1;
+	};
+
+	dnssec-validation auto;
+
+	auth-nxdomain no;
+
+	listen-on { any; };
+
+	listen-on-v6 { any; };
+};

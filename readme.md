@@ -276,6 +276,56 @@ After making your changes, rename the file to match the zone (e.g., `db.gt.com`)
       };
       ```
 
+#### 🔁 Adding a Secondary DNS Server to Allow External Resolution
+
+To allow DNS queries to be resolved outside the network (for example, resolving `google.com`), you must add a secondary DNS forwarder (such as Google’s `8.8.8.8`) inside your `options` block. You can use the provided `named.conf.options` as a template for DNS configuration. After editing (or if you wish to use the default), move the file to the correct location:
+
+- **On Debian/Ubuntu:**
+    - Uncomment the appropriate directory line in your options file:
+        ```conf
+        directory "/var/cache/bind";
+        ```
+    - Move your custom `named.conf.options` to replace the existing one:
+        ```bash
+        mv ./config_files/named.conf.options /etc/bind/named.conf.options
+        ```
+    - Restart BIND to apply the changes:
+        ```bash
+        sudo systemctl restart bind9
+        ```
+
+- **On Rocky Linux / CentOS / RHEL:**
+    - Open `/etc/named.conf` and remove any existing `options { ... };` block.
+    - Move your configuration file:
+        ```bash
+        mv ./named.conf.options /var/named/named.conf.options
+        ```
+    - Add the following line to the end of `/etc/named.conf`:
+        ```
+        include "/var/named/named.conf.options";
+        ```
+    - Restart the DNS service:
+        ```bash
+        sudo systemctl restart named
+        ```
+
+- **On openSUSE:**
+    - Edit `/etc/named.conf` and remove the existing `options { ... };` block.
+    - Move your configuration file:
+        ```bash
+        mv ./named.conf.options /var/lib/named/named.conf.options
+        ```
+    - Add this line to `/etc/named.conf`:
+        ```
+        include "/var/lib/named/named.conf.options";
+        ```
+    - Restart the DNS service:
+        ```bash
+        sudo systemctl restart named
+        ```
+
+---
+
 For more details, see the comments in the `named.conf.zones` and `db.example.com` files.
 
 ### 5. Configure NTP Server and Clients
@@ -298,7 +348,7 @@ pool 3.debian.pool.ntp.org iburst
 After editing (or if you wish to use the default), move the file to the correct location:
 ```bash
 cd ./config_files/ntp
-sudo mv server.ntp.conf /etc/ntp.conf
+sudo mv server.ntp.conf /etc/ntpsec/ntp.conf
 ```
 
 - To apply changes, restart the NTP service:
@@ -308,7 +358,6 @@ sudo mv server.ntp.conf /etc/ntp.conf
 - To check synchronization status:
   ```bash
   sudo ntpq -p
-  sudo ntpstat
   ```
 
 ---
@@ -356,7 +405,6 @@ sudo mv client.ntp.conf /etc/ntp.conf
 - Check status:
   ```bash
   sudo ntpq -p
-  sudo ntpstat
   ```
 
 ---
