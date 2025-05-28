@@ -34,5 +34,5 @@ $TTL    604800
 quetzal         IN      A       172.16.0.10
 admin.quetzal   IN      A       172.16.0.10
 www.quetzal     IN      A       172.16.0.10
-notas.quetzal   IN      A       172.16.0.10
+notes.quetzal   IN      A       172.16.0.10
 samba.quetzal   IN      A       172.16.0.11
