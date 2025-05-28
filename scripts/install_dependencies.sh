@@ -70,6 +70,7 @@ case "$ID" in
         apt install -y apache2 mariadb-server mariadb-client
         apt install -y php libapache2-mod-php php-mysql php-cli php-curl php-xml php-mbstring php-imap php-apcu php-intl php-gd
         apt install -y phpmyadmin
+        apt install -y php-sqlite3
 
         /usr/bin/mysql_secure_installation
         # SSL 
@@ -84,6 +85,8 @@ case "$ID" in
         apt install samba
         # basic auth with .htpasswd
         apt install libapache2-mod-authnz-external pwauth
+
+        a2enmod ssl
         a2enmod authnz_external
         # Security tools
         apt install -y iptables fail2ban logrotate chkrootkit postfix
@@ -154,7 +157,9 @@ case "$ID" in
 
         echo "Installing Apache, MariaDB and PHP..."
         dnf install -y httpd mariadb-server mariadb
+        dnf install -y mod_ssl 
         dnf install -y php php-mysqlnd php-cli php-curl php-xml php-mbstring php-gd php-intl php-imap php-json php-common php-opcache
+        systemctl restart httpd   # Rocky/CentOS/RHEL
 
         /usr/bin/mysql_secure_installation
 
@@ -243,6 +248,7 @@ case "$ID" in
         # Enable services
         echo "Enabling services..."
         systemctl enable httpd --now
+        systemctl restart httpd
         systemctl enable mariadb --now
         systemctl enable smb --now
         systemctl enable vsftpd --now
@@ -274,7 +280,9 @@ case "$ID" in
 
         # Web + PHP + Database
         echo "Installing Apache, MariaDB and PHP..."
-        zypper install -y apache2 mariadb
+        zypper install -y apache2 mariadb mariadb-client
+        zypper install -y apache2-mod_ssl
+        systemctl restart apache2
         zypper install -y php7 php7-mysql php7-cli php7-curl php7-xml php7-mbstring php7-gd php7-intl
 
         /usr/bin/mysql_secure_installation
