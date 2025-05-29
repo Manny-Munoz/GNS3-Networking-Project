@@ -1,9 +1,7 @@
 #!/bin/bash
 
-if [ "$EUID" -ne 0 ]; then
-    echo "Run this script as root"
-    exit 1
-fi
+source ./bash_utils.sh
+require_root
 
 # Generic function to install CMS
 install_cms() {
@@ -13,7 +11,7 @@ install_cms() {
     local CURRENT_DIR=$(pwd)
 
     local SITE_DIR="$WEBROOT/$name"
-    echo "Installing $name in $SITE_DIR ..."
+    cecho "Installing $name in $SITE_DIR ..." "$BLUE"
 
     mkdir -p "$SITE_DIR"
     cd "$SITE_DIR"
@@ -32,7 +30,7 @@ install_cms() {
     chown -R "$USERWEB:$USERWEB" "$SITE_DIR"
     chmod -R 755 "$SITE_DIR"
 
-    echo "$name installed in $SITE_DIR"
+    cecho "$name installed in $SITE_DIR" "$BLUE"
 
     cd "$CURRENT_DIR"
 
@@ -52,15 +50,15 @@ else
 fi
 
 # Detect OS family and distribution name
-echo "Detecting operating system..."
+cecho "Detecting operating system..." "$BLUE"
 
 case "$ID" in
     ubuntu|debian)
         WEBROOT="/var/www/html"
         USERWEB="www-data"
 
-        echo "Debian-based system detected: $PRETTY_NAME"
-        echo "==> Running common commands for Debian/Ubuntu"
+        cecho "Debian-based system detected: $PRETTY_NAME" "$GREEN"
+        cecho "==> Running common commands for Debian/Ubuntu" "$BLUE"
 
         # upgrade repositories
         apt update && apt upgrade -y
@@ -94,7 +92,7 @@ case "$ID" in
         apt install -y htop vnstat iproute2 cron mailutils tmux
         mv ../config_files/tmux.conf /etc/tmux.conf
         # Network tools
-        sudo apt install ipcalc
+        apt install ipcalc
         # file management
         apt install -y tar gzip zip p7zip-full
         # Network service utilities
@@ -102,7 +100,7 @@ case "$ID" in
         # Development tools
         apt install -y git nodejs npm python3 python3-pip
         if [ "$ID" = "ubuntu" ]; then
-            echo "==> Running Ubuntu-specific commands"
+            cecho "==> Running Ubuntu-specific commands" "$GREEN"
 
             # Control apparmor
             apt install -y apparmor-utils apparmor-profiles
@@ -131,7 +129,7 @@ case "$ID" in
             install_cms "dokuwiki" "$URL_DOKUWIKI"
 
         elif [ "$ID" = "debian" ]; then
-            echo "==> Running Debian-specific commands"
+            cecho "==> Running Debian-specific commands" "$GREEN"
 
             install_cms "wordpress" "$URL_WORDPRESS"
         fi
@@ -142,20 +140,15 @@ case "$ID" in
         WEBROOT="/var/www/html"
         USERWEB="apache"
 
-        echo "==> Running common commands for Rocky/CentOS"
+        cecho "==> Running common commands for Rocky/CentOS" "$BLUE"
 
-        echo "Updating the system..."
+        cecho "Updating the system..." "$BLUE"
         dnf update -y && dnf upgrade -y
 
-        echo "==> Running common commands for Rocky/CentOS"
-
-        echo "Updating the system..."
-        dnf update -y && dnf upgrade -y
-
-        echo "Installing DHCP server + bind..."
+        cecho "Installing DHCP server + bind..." "$BLUE"
         dnf install -y dhcp-server bind bind-utils
 
-        echo "Installing Apache, MariaDB and PHP..."
+        cecho "Installing Apache, MariaDB and PHP..." "$BLUE"
         dnf install -y httpd mariadb-server mariadb
         dnf install -y mod_ssl 
         dnf install -y php php-mysqlnd php-cli php-curl php-xml php-mbstring php-gd php-intl php-imap php-json php-common php-opcache
@@ -163,36 +156,30 @@ case "$ID" in
 
         /usr/bin/mysql_secure_installation
 
-        echo "Installing OpenSSL and root certificates..."
+        cecho "Installing OpenSSL and root certificates..." "$BLUE"
         dnf install -y openssl ca-certificates
 
-        echo "Installing FTP server (vsftpd)..."
+        cecho "Installing FTP server (vsftpd)..." "$BLUE"
         dnf install -y vsftpd
 
-        echo "Installing NTP..."
+        cecho "Installing NTP..." "$BLUE"
         dnf install -y chrony
         systemctl enable chronyd --now
 
         # SSH
-        echo "Installing SSH server..."
+        cecho "Installing SSH server..." "$BLUE"
         dnf install -y openssh-server
         systemctl enable sshd --now
 
         # Samba
-        echo "Installing Samba..."
+        cecho "Installing Samba..." "$BLUE"
         dnf install -y samba
 
         # Basic authentication (htpasswd)
-        echo "Installing apache-utils..."
+        cecho "Installing apache-utils..." "$BLUE"
         dnf install -y httpd-tools
 
-        # Prompt for username and password for HTTP basic auth
-        read -p "Enter username for HTTP basic authentication: " HTTPAUTH_USER
-        read -s -p "Enter password for $HTTPAUTH_USER: " HTTPAUTH_PASS
-        echo
-        htpasswd -bc /etc/httpd/.htpasswd "$HTTPAUTH_USER" "$HTTPAUTH_PASS"
-
-        echo "Installing monitoring and security tools..."
+        cecho "Installing monitoring and security tools..." "$BLUE"
 
         # Protection against brute force on services (like SSH)
         dnf install -y fail2ban
@@ -204,7 +191,7 @@ case "$ID" in
         # Rootkit scanners (malware detection)
         dnf install -y rkhunter chkrootkit
 
-        echo "Installing system utilities..."
+        cecho "Installing system utilities..." "$BLUE"
 
         # Interactive process monitor
         dnf install -y htop
@@ -227,7 +214,7 @@ case "$ID" in
         dnf install -y mlocate
         updatedb
 
-        echo "Installing development tools..."
+        cecho "Installing development tools..." "$BLUE"
 
         # Git, Node.js, npm, Python and pip
         dnf install -y git nodejs npm python3 python3-pip
@@ -241,12 +228,12 @@ case "$ID" in
         # Podman: Docker-compatible OCI alternative
         dnf install -y podman
 
-        dnf install ipcalc
+        dnf install -y ipcalc
 
-        echo "All tools have been installed."
+        cecho "All tools have been installed." "$GREEN"
 
         # Enable services
-        echo "Enabling services..."
+        cecho "Enabling services..." "$BLUE"
         systemctl enable httpd --now
         systemctl restart httpd
         systemctl enable mariadb --now
@@ -255,15 +242,15 @@ case "$ID" in
 
 
         if [ "$ID" = "rocky" ]; then
-            echo "==> Running Rocky Linux-specific commands"
+            cecho "==> Running Rocky Linux-specific commands" "$GREEN"
             install_cms "wordpress" "$URL_WORDPRESS"
         elif [ "$ID" = "centos" ]; then
-            echo "==> Running CentOS-specific commands" 
+            cecho "==> Running CentOS-specific commands" "$GREEN"
         fi
         ;;
 
     opensuse*|sles)
-        echo "openSUSE system detected: $PRETTY_NAME"
+        cecho "openSUSE system detected: $PRETTY_NAME" "$GREEN"
         WEBROOT="/srv/www/htdocs"
         USERWEB="wwwrun"
 
@@ -271,15 +258,15 @@ case "$ID" in
         zypper update -y
 
         # DHCP
-        echo "Installing DHCP server..."
+        cecho "Installing DHCP server..." "$BLUE"
         zypper install -y dhcp-server
 
         # DNS
-        echo "Installing BIND (DNS server)..."
+        cecho "Installing BIND (DNS server)..." "$BLUE"
         zypper install -y bind bind-utils
 
         # Web + PHP + Database
-        echo "Installing Apache, MariaDB and PHP..."
+        cecho "Installing Apache, MariaDB and PHP..." "$BLUE"
         zypper install -y apache2 mariadb mariadb-client
         zypper install -y apache2-mod_ssl
         systemctl restart apache2
@@ -290,54 +277,45 @@ case "$ID" in
 
         # Composer
         if ! command -v composer >/dev/null; then
-            echo "Composer is not installed."
+            cecho "Composer is not installed." "$RED"
             exit 1
         fi
 
-        # Drupal 
-        echo "Installing drupal with Composer..."
-        composer create-project drupal/mi-drupal
-
         # SSL
-        echo "Installing OpenSSL and certificates..."
+        cecho "Installing OpenSSL and certificates..." "$BLUE"
         zypper install -y openssl ca-certificates
 
         # FTP
-        echo "Installing FTP server (vsftpd)..."
+        cecho "Installing FTP server (vsftpd)..." "$BLUE"
         zypper install -y vsftpd
 
         # NTP
-        echo "Installing NTP..."
+        cecho "Installing NTP..." "$BLUE"
         zypper install -y chrony
         systemctl enable chronyd --now
 
         # SSH
-        echo "Installing SSH server..."
+        cecho "Installing SSH server..." "$BLUE"
         zypper install -y openssh
         systemctl enable sshd --now
 
         # Samba
-        echo "Installing Samba..."
+        cecho "Installing Samba..." "$BLUE"
         zypper install -y samba
 
         # Basic authentication (htpasswd)
-        echo "Installing apache-utils..."
+        cecho "Installing apache-utils..." "$BLUE"
         zypper install -y apache2-utils
-        # Prompt for username and password for HTTP basic auth
-        read -p "Enter username for HTTP basic authentication: " HTTPAUTH_USER
-        read -s -p "Enter password for $HTTPAUTH_USER: " HTTPAUTH_PASS
-        echo
-        htpasswd -bc /etc/apache2/.htpasswd "$HTTPAUTH_USER" "$HTTPAUTH_PASS"
 
         # Enable services
-        echo "Enabling services..."
+        cecho "Enabling services..." "$GREEN"
         systemctl enable apache2 --now
         systemctl enable mariadb --now
         systemctl enable smb --now
         systemctl enable vsftpd --now
 
         # Firewall (optional, if firewalld is used)
-        echo "Checking firewalld..."
+        cecho "Checking firewalld..." "$BLUE"
         if systemctl is-active --quiet firewalld; then
           echo "Enabling ports in firewalld..."
           firewall-cmd --permanent --add-service=http
@@ -347,37 +325,37 @@ case "$ID" in
           firewall-cmd --reload
         fi
 
-        zypper install fail2ban         # Protection against brute force attacks
-        zypper install logwatch         # System activity reports
-        zypper install rkhunter chkrootkit   # Rootkit scanners
-        zypper install htop             # Interactive process monitor
-        zypper install iftop            # Bandwidth monitor
-        zypper install net-tools        # Classic network tools
-        zypper install mc               # Midnight Commander file manager
-        zypper install tmux             # Terminal multiplexer
+        zypper install -y fail2ban         # Protection against brute force attacks
+        zypper install -y logwatch         # System activity reports
+        zypper install -y rkhunter chkrootkit   # Rootkit scanners
+        zypper install -y htop             # Interactive process monitor
+        zypper install -y iftop            # Bandwidth monitor
+        zypper install -y net-tools        # Classic network tools
+        zypper install -y mc               # Midnight Commander file manager
+        zypper install -y tmux             # Terminal multiplexer
         mv ../config_files/tmux.conf /etc/tmux.conf
-        zypper install mlocate          # Fast file searcher
+        zypper install -y mlocate          # Fast file searcher
         updatedb                        # Update file search database
-        zypper install git nodejs npm python3 python3-pip   # Development tools
-        zypper install zip unzip tar    # Compression and archiving tools
-        zypper install mailx            # Console mail client
-        zypper install podman
+        zypper install -y git nodejs npm python3 python3-pip   # Development tools
+        zypper install -y zip unzip tar    # Compression and archiving tools
+        zypper install -y mailx            # Console mail client
+        zypper install -y podman
 
         # Network service utilities
         zypper addrepo https://download.opensuse.org/repositories/network:utilities/15.6/network:utilities.repo
         zypper refresh
         zypper install ipcalc
 
-        echo "Installing Composer..."
+        cecho "Installing Composer..." "$BLUE"
         zypper install -y curl unzip php7-cli
-        zypper install php-composer
+        zypper install -y php-composer
 
         install_cms "joomla" "$URL_JOOMLA"
 
-        echo "Configuration and installation complete for openSUSE."
+        cecho "Configuration and installation complete for openSUSE." "$GREEN"
         ;;
     *)
-        echo "Unsupported or unknown distribution: $PRETTY_NAME"
+        cecho "Unsupported or unknown distribution: $PRETTY_NAME" "$RED"
         ;;
 esac
 

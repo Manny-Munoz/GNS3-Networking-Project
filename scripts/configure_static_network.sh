@@ -1,22 +1,18 @@
 #!/bin/bash
 
-set -e
-
-if [ "$EUID" -ne 0 ]; then
-    echo "Please run as root"
-    exit 1
-fi
+source ./bash_utils.sh
+require_root
 
 # Detect OS
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     DISTRO=$ID
 else
-    echo "Could not detect operating system."
+    cecho "Could not detect operating system." "$RED"
     exit 1
 fi
 
-echo "Detected distro: $DISTRO"
+cecho "Detected distro: $DISTRO" "$GREEN"
 
 establish_dhcp() {
 cat <<EOF
@@ -85,24 +81,24 @@ SUBNET=$(ipcalc -n "$ADDRESS" "$NETMASK" | grep Network | awk '{print $2}' | cut
 ADDR_INT=$(ip2int "$ADDRESS")
 DHCP_START_INT=$(ip2int "$DHCP_START")
 if (( ADDR_INT + 2 > DHCP_START_INT )); then
-    echo "❌ ERROR: The IP address should be at least 2 numbers less than the DHCP_Start."
+    cecho "❌ ERROR: The IP address should be at least 2 numbers less than the DHCP_Start." "$RED"
     exit 1
 fi
 
 # Create Samba IP address
 SAMBA_ADDRESS=$(int2ip $((ADDR_INT + 1)))
-echo "Samba IP address will be: $SAMBA_ADDRESS"
+cecho "Samba IP address will be: $SAMBA_ADDRESS" "$GREEN"
 
 # Validate DHCP range
 if ! ip_in_subnet "$DHCP_START" "$SUBNET" "$NETMASK" || ! ip_in_subnet "$DHCP_END" "$SUBNET" "$NETMASK"; then
-    echo "❌ ERROR: The DHCP range does not match the subnet $SUBNET/$NETMASK"
+    cecho "❌ ERROR: The DHCP range does not match the subnet $SUBNET/$NETMASK" "$RED"
     exit 1
 fi
 
 case "$DISTRO" in
 
 debian | ubuntu)
-    echo "Configuring network for Debian/Ubuntu..."
+    cecho "Configuring network for Debian/Ubuntu..." "$GREEN"
 
     if [ -d /etc/netplan ]; then
         NETPLAN_FILE="/etc/netplan/50-cloud-init.yaml"
@@ -128,7 +124,7 @@ network:
             - $DNS
 EOF
 
-        echo "Applying Netplan configuration..."
+        cecho "Applying Netplan configuration..." "$GREEN"
         netplan apply
     else
         # Fallback for Debian or legacy Ubuntu
@@ -145,12 +141,12 @@ iface $IFACE inet static
     post-up ip addr add $SAMBA_ADDRESS/$(IPprefix_by_netmask "$NETMASK") dev $IFACE
 EOF
 
-        echo "Restarting networking..."
+        cecho "Restarting networking..." "$GREEN"
         systemctl restart networking
         systemctl status networking
     fi
 
-    echo "Configuring isc-dhcp-server..."
+    cecho "Configuring isc-dhcp-server..." "$GREEN"
 
     echo "INTERFACESv4=\"$IFACE\"" >/etc/default/isc-dhcp-server
 
@@ -160,7 +156,7 @@ EOF
     systemctl status isc-dhcp-server
     ;;
 opensuse* | suse)
-    echo "Configuring network for openSUSE..."
+    cecho "Configuring network for openSUSE..." "$GREEN"
 
 CONFIG_FILE="/etc/sysconfig/network/ifcfg-$IFACE"
 
@@ -188,7 +184,7 @@ EOF
     ;;
 
 rocky | centos | rhel)
-    echo "Configuring network for Rocky Linux/CentOS/RHEL..."
+    cecho "Configuring network for Rocky Linux/CentOS/RHEL..." "$GREEN"
 
     CONFIG_FILE="/etc/sysconfig/network-scripts/ifcfg-$IFACE"
     
@@ -217,9 +213,9 @@ EOF
     ;;
 
 *)
-    echo "Distribution not supported yet: $DISTRO"
+    cecho "Distribution not supported yet: $DISTRO" "$RED"
     exit 1
     ;;
 esac
 
-echo "✅ Network and DHCP configuration completed."
+cecho "✅ Network and DHCP configuration completed." "$GREEN"
