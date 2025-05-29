@@ -277,7 +277,60 @@ Después de hacer los cambios, renombra el archivo para que coincida con la zona
 
 Para más detalles, consulta los comentarios en los archivos `named.conf.zones` y `db.example.com`.
 
-### 5. Configurar el servidor NTP y los clientes
+---
+
+### 5. Generar certificados SSL y Virtual Hosts de Apache
+
+El script [`generate_ssl_certs.sh`](./scripts/generate_ssl_certs.sh) automatiza la creación de certificados SSL autofirmados y la configuración de virtual hosts de Apache para tus subdominios. Funciona en Ubuntu, Debian, openSUSE y Rocky Linux.
+
+#### Uso
+
+**1. Haz el script ejecutable y ejecútalo como root:**
+
+Para Ubuntu/Rocky/openSUSE:
+```bash
+sudo chmod +x ./scripts/generate_ssl_certs.sh
+sudo ./scripts/generate_ssl_certs.sh
+```
+
+Para Debian:
+```bash
+su -
+chmod +x ./scripts/generate_ssl_certs.sh
+./scripts/generate_ssl_certs.sh
+```
+
+**2. Sigue los prompts interactivos:**
+- Ingresa el dominio base (por ejemplo, `quetzal`).
+- Selecciona el código de país (`gt`, `cr`, `us`, `mx`).
+- Elige subdominios por defecto o personalizados.
+- Opcionalmente, crea un usuario inicial para autenticación HTTP Basic (para `.htpasswd`).
+
+**3. El script hará lo siguiente:**
+- Generar un certificado SSL autofirmado para tu dominio.
+- Crear una configuración de virtual host para cada subdominio.
+- Guardar los certificados SSL en `/etc/ssl/<tu-dominio>/`.
+- Guardar las configuraciones de Apache en el directorio correcto según tu sistema operativo.
+- Recargar Apache para aplicar los cambios.
+
+**4. Proteger subdominios con autenticación básica (opcional):**
+
+Para habilitar autenticación HTTP Basic en cualquier subdominio, agrega las siguientes líneas dentro del bloque `<Directory>` de la configuración del virtual host correspondiente:
+
+```apache
+    AuthType Basic
+    AuthName "Restricted Access"
+    AuthUserFile /etc/apache2/.htpasswd   # o /etc/httpd/.htpasswd en Rocky
+    Require valid-user
+```
+
+Consulta la salida del script para ver la ruta exacta de tu archivo `.htpasswd`.
+
+Para más detalles, revisa los comentarios dentro del script [`generate_ssl_certs.sh`](./scripts/generate_ssl_certs.sh).
+
+---
+
+### 6. Configurar el servidor NTP y los clientes
 
 #### Configuración NTP para Ubuntu Server/Debian (usando `ntpd`)
 

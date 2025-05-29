@@ -326,9 +326,62 @@ To allow DNS queries to be resolved outside the network (for example, resolving 
 
 ---
 
+### 6. Generate SSL Certificates and Apache Virtual Hosts
+
+The script [`generate_ssl_certs.sh`](./scripts/generate_ssl_certs.sh) automates the creation of self-signed SSL certificates and Apache virtual host configurations for your subdomains. It works on Ubuntu, Debian, openSUSE, and Rocky Linux.
+
+#### Usage
+
+**1. Make the script executable and run it as root:**
+
+For Ubuntu/Rocky/openSUSE:
+```bash
+sudo chmod +x ./scripts/generate_ssl_certs.sh
+sudo ./scripts/generate_ssl_certs.sh
+```
+
+For Debian:
+```bash
+su -
+chmod +x ./scripts/generate_ssl_certs.sh
+./scripts/generate_ssl_certs.sh
+```
+
+**2. Follow the interactive prompts:**
+- Enter the base domain (e.g., `quetzal`).
+- Select your country code (`gt`, `cr`, `us`, `mx`).
+- Choose default or custom subdomains.
+- Optionally, create an initial HTTP Basic Auth user (for `.htpasswd`).
+
+**3. The script will:**
+- Generate a self-signed SSL certificate for your domain.
+- Create a virtual host configuration for each subdomain.
+- Place the SSL certificates in `/etc/ssl/<your-domain>/`.
+- Place the Apache configs in the correct directory for your OS.
+- Reload Apache to apply the changes.
+
+**4. Protect subdomains with Basic Auth (optional):**
+
+To enable HTTP Basic Authentication on any subdomain, add the following lines inside the `<Directory>` block of the corresponding virtual host config:
+
+```apache
+    AuthType Basic
+    AuthName "Restricted Access"
+    AuthUserFile /etc/apache2/.htpasswd   # or /etc/httpd/.htpasswd on Rocky
+    Require valid-user
+```
+
+See the script output for the exact path to your `.htpasswd` file.
+
+---
+
+For more details, see the comments in the [`generate_ssl_certs.sh`](./scripts/generate_ssl_certs.sh) script.
+
+--- 
+
 For more details, see the comments in the `named.conf.zones` and `db.example.com` files.
 
-### 5. Configure NTP Server and Clients
+### 6. Configure NTP Server and Clients
 
 #### NTP configuration for Ubuntu Server/Debian (using `ntpd`)
 
