@@ -1,0 +1,11 @@
+enabled: '1'
+date:
+  start: '2025'
+  end: ''
+owner: 'Quetzal GT'
+link: ''
+target: _blank
+additional:
+  text: 'Desarrollado por Quetzal Guatemala'
+css:
+  class: ''
