@@ -70,6 +70,9 @@ case "$ID" in
         apt install -y php-sqlite3
 
         /usr/bin/mysql_secure_installation
+
+        # Vim 
+        apt install -y vim
         # SSL 
         apt install openssl ca-certificates
         # FTP
@@ -148,6 +151,11 @@ case "$ID" in
         cecho "Updating the system..." "$BLUE"
         dnf update -y && dnf upgrade -y
 
+        # VIM 
+        cecho "Installing Vim..." "$BLUE"
+        dnf install -y vim
+
+        # DHCP + DNS
         cecho "Installing DHCP server + bind..." "$BLUE"
         dnf install -y dhcp-server bind bind-utils
 
@@ -264,6 +272,10 @@ case "$ID" in
 
         zypper refresh
         zypper update -y
+
+        # VIM 
+        cecho "Installing Vim..." "$BLUE"
+        zypper install -y vim
 
         # DHCP
         cecho "Installing DHCP server..." "$BLUE"
