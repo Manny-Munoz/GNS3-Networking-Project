@@ -25,16 +25,23 @@ set_paths_and_cmds() {
     debian)
       APACHE_CONF_DIR="/etc/apache2/sites-available"
       APACHE_WEB_ROOT="/var/www"
-      ENABLE_CMD="a2ensite"
+      ENABLE_CMD="/usr/sbin/a2ensite"
       RELOAD_CMD="systemctl reload apache2"
       APACHE_USER="www-data"
       ;;
-    opensuse|rocky)
+    opensuse)
+      APACHE_CONF_DIR="/etc/ssl/$SITE_NAME"
+      APACHE_WEB_ROOT="/srv/www"
+      ENABLE_CMD="true"  # auto enabled
+      RELOAD_CMD="systemctl restart httpd"
+      APACHE_USER="wwwrun"
+      ;;
+    rocky)
       APACHE_CONF_DIR="/etc/httpd/conf.d"
       APACHE_WEB_ROOT="/srv/www"
       ENABLE_CMD="true"  # auto enabled
       RELOAD_CMD="systemctl restart apache2"
-      APACHE_USER="wwwrun"
+      APACHE_USER="apache"
       ;;
   esac
 }

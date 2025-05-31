@@ -7,6 +7,6 @@
 -- Replace 'password here' with a strong password of your choice.
 
 CREATE DATABASE IF NOT EXISTS cms_db;
-CREATE USER 'cms_user'@'localhost' IDENTIFIED BY 'password here';
+CREATE USER 'cms_user'@'localhost' IDENTIFIED BY 'change_this_password';
 GRANT ALL PRIVILEGES ON cms_db.* TO 'cms_user'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;

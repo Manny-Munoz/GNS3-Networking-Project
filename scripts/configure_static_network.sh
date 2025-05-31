@@ -69,13 +69,10 @@ read -p "Interface name (e.g. ens3, eth0): " IFACE
 read -p "Static IP address (e.g. 172.16.0.10): " ADDRESS
 read -p "Netmask (e.g. 255.255.252.0): " NETMASK
 read -p "Gateway (e.g. 172.16.0.1): " GATEWAY
-read -p "DNS nameserver (e.g. 172.16.0.1): " DNS
+read -p "DNS nameserver (e.g. 172.16.0.10): " DNS
 read -p "DHCP Range start (e.g. 172.16.0.20): " DHCP_START
 read -p "DHCP Range end (e.g. 172.16.0.100): " DHCP_END
-
-
-# Calculate subnet using ipcalc
-SUBNET=$(ipcalc -n "$ADDRESS" "$NETMASK" | grep Network | awk '{print $2}' | cut -d'/' -f1)
+read -p "Subnet (e.g. 172.16.0.0): " SUBNET
 
 
 ADDR_INT=$(ip2int "$ADDRESS")
@@ -89,11 +86,19 @@ fi
 SAMBA_ADDRESS=$(int2ip $((ADDR_INT + 1)))
 cecho "Samba IP address will be: $SAMBA_ADDRESS" "$GREEN"
 
-# Validate DHCP range
-if ! ip_in_subnet "$DHCP_START" "$SUBNET" "$NETMASK" || ! ip_in_subnet "$DHCP_END" "$SUBNET" "$NETMASK"; then
+
+case "$DISTRO" in
+debian | ubuntu)
+    # Calculate subnet using ipcalc
+    SUBNET=$(ipcalc -n "$ADDRESS" "$NETMASK" | grep Network | awk '{print $2}' | cut -d'/' -f1)
+    #Validate DHCP range
+    if ! ip_in_subnet "$DHCP_START" "$SUBNET" "$NETMASK" || ! ip_in_subnet "$DHCP_END" "$SUBNET" "$NETMASK"; then
     cecho "❌ ERROR: The DHCP range does not match the subnet $SUBNET/$NETMASK" "$RED"
     exit 1
-fi
+    fi
+    ;;
+esac
+
 
 case "$DISTRO" in
 
@@ -177,6 +182,8 @@ EOF
 
     establish_dhcp > /etc/dhcpd.conf
 
+    echo "DHCPD_INTERFACE=\"$IFACE\"" >>/etc/sysconfig/dhcpd
+
     systemctl enable dhcpd
     systemctl restart wicked
     systemctl restart dhcpd
@@ -205,12 +212,21 @@ EOF
     establish_dhcp > /etc/dhcp/dhcpd.conf
 
     systemctl enable dhcpd
-    echo "Restarting network..."
-    nmcli connection reload
+
+    # Delete existing connection 
+    nmcli connection delete "$IFACE"
+
+    # Create new connection
+    nmcli connection add type ethernet ifname "$IFACE" con-name "$IFACE" ip4 "$ADDRESS/$(IPprefix_by_netmask "$NETMASK")" gw4 "$GATEWAY"
+    nmcli connection modify "$IFACE" ipv4.dns "$DNS"
+    nmcli connection modify "$IFACE" ipv4.method manual
     nmcli connection up "$IFACE"
+
+    sleep 2
+    ip a show "$IFACE"
+
     systemctl restart dhcpd
     systemctl status dhcpd
-    ;;
 
 *)
     cecho "Distribution not supported yet: $DISTRO" "$RED"
