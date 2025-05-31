@@ -170,6 +170,29 @@ chmod +x ./scripts/install_dependencies.sh
 
 ---
 
+#### ⚠️ Interactive Prompts During Installation
+
+While running the script, you will need to answer some questions to set up MySQL/MariaDB and Kerberos:
+
+**MySQL Secure Installation (`mysql_secure_installation`):**
+
+- **Enter current password for root (enter for none):**  
+  Just press Enter (no password is set by default).
+- **Switch to unix_socket authentication?**  
+  Answer **no** (using unix_socket can be a security concern later).
+- **Change the root password?**  
+  Answer **yes** and set a strong root password.
+- **Remove anonymous users?**  
+  Answer **yes**.
+- **Disallow root login remotely?**  
+  Answer **yes**.
+- **Remove test database and access to it?**  
+  Answer **yes**.
+- **Reload privilege tables now?**  
+  Answer **yes**.
+
+---
+
 ### 2. Run configure_static_network.sh
 
 **For Ubuntu/Rocky/openSUSE:**
@@ -326,7 +349,7 @@ To allow DNS queries to be resolved outside the network (for example, resolving 
 
 ---
 
-### 6. Generate SSL Certificates and Apache Virtual Hosts
+### 5. Generate SSL Certificates and Apache Virtual Hosts
 
 The script [`generate_ssl_certs.sh`](./scripts/generate_ssl_certs.sh) automates the creation of self-signed SSL certificates and Apache virtual host configurations for your subdomains. It works on Ubuntu, Debian, openSUSE, and Rocky Linux.
 
@@ -466,6 +489,55 @@ For more information, see the documentation and examples in the `./config_files/
 
 ---
 
+### 7. Configure and Use the File Server (SFTP/NFS)
+
+The script [`setup_file_server.sh`](./scripts/setup_file_server.sh) allows you to quickly set up a shared file server using SFTP (on Debian/Ubuntu) or NFS (on openSUSE/Rocky Linux).
+
+#### Usage
+
+1. **Make the script executable and run it as root:**
+   ```bash
+   sudo chmod +x ./scripts/setup_file_server.sh
+   sudo ./scripts/setup_file_server.sh
+   ```
+
+2. **Follow the interactive prompts:**
+   - Choose the mount directory (default is `/srv/fileshare` or specify a custom one).
+   - The script will detect your distribution and automatically configure SFTP or NFS as appropriate.
+
+#### Access from Clients
+
+- **On Debian/Ubuntu (SFTP):**
+  - User: `quetzalftp`
+  - Group: `ftpusers`
+  - Upload folder: `upload`
+  - Connect from Linux:
+    ```bash
+    sftp quetzalftp@<server_ip>
+    cd upload
+    put filename.txt
+    ```
+  - In FileZilla:
+    - Protocol: SFTP
+    - Host: `<server_ip>`
+    - User: `quetzalftp`
+
+- **On openSUSE/Rocky Linux (NFS):**
+  - Mount the shared directory from the client:
+    ```bash
+    sudo apt install nfs-common    # On Debian/Ubuntu
+    sudo mount -t nfs <server_ip>:/srv/fileshare /mnt
+    ```
+  - To mount automatically at boot, add to `/etc/fstab`:
+    ```
+    <server_ip>:/srv/fileshare  /mnt  nfs  defaults  0  0
+    ```
+
+See the script itself for additional details or customization options.
+
+---
+
+
 ## 🖥️ Interface Connections Documentation
 
 Each router is connected to its local switch through interface `f0/1`, and to the Central router through interface `f2/0`. Inter-region links use interfaces `f0/0` or `f1/0` as point-to-point links. More detailed mappings will be added to `vm_config.md` and diagram annotations.
@@ -474,7 +546,7 @@ README is available in:
 
 * English 🇺🇸 *(You are here)*
 * [Español 🇪🇸](readme_es.md)
-
+ 
 
 
 ## ⚖️ License
@@ -482,5 +554,3 @@ README is available in:
 This project is for educational and personal use. The Cisco IOS images and the operating systems used have their own licenses.
 
 ---
-
-> For more details, see the `configuracion_routers.txt` file and the visual diagram in the `diagramas/` folder.

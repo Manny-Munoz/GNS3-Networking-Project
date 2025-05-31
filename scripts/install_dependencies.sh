@@ -19,7 +19,6 @@ install_cms() {
 
     if [ "$1" = "drupal" ]; then
         composer create-project drupal/recommended-project drupal
-        cd drupal && php -d memory_limit=256M web/core/scripts/drupal quick-start demo_umami
         cd -
     else
         wget -q "$url" -O "$name.tar.gz"
@@ -90,7 +89,7 @@ case "$ID" in
         apt install -y iptables fail2ban logrotate chkrootkit postfix
         # Monitoring and administration tools
         apt install -y htop vnstat iproute2 cron mailutils tmux
-        mv ../config_files/tmux.conf /etc/tmux.conf
+        mv ../config_files/.tmux.conf /etc/.tmux.conf
         # Network tools
         apt install ipcalc
         # file management
@@ -99,9 +98,10 @@ case "$ID" in
         apt install -y squid docker.io
         # Development tools
         apt install -y git nodejs npm python3 python3-pip
+        apt install nfs-kernel-server -y
+        systemctl enable --now nfs-server
         if [ "$ID" = "ubuntu" ]; then
             cecho "==> Running Ubuntu-specific commands" "$GREEN"
-
             # Control apparmor
             apt install -y apparmor-utils apparmor-profiles
 
@@ -113,15 +113,18 @@ case "$ID" in
             install_cms "drupal" ""
 
             # Bookstack
+            cd $WEBROOT
             git clone https://github.com/BookStackApp/BookStack.git --branch release --single-branch bookstack
-            cd bookstack
+            cd -
+            cd $WEBROOT/bookstack
             composer install --no-dev
             cd - 
 
             # osTicket
             cd $WEBROOT
             curl -s https://api.github.com/repos/osTicket/osTicket/releases/latest|grep browser_download_url| cut -d '"' -f 4 | wget -i -
-            unzip osTicket-v1.18.1.zip -d /var/www/html/osticket
+            unzip osTicket*.zip -d /var/www/html/osticket
+            rm osTicket*.zip
             chown -R www-data:www-data /var/www/html/osticket
             cd - 
 
@@ -171,6 +174,11 @@ case "$ID" in
         dnf install -y openssh-server
         systemctl enable sshd --now
 
+        # Install NFS server 
+        cecho "Installing NFS server..." "$BLUE"
+        dnf install nfs-utils -y
+        systemctl enable --now nfs-server
+
         # Samba
         cecho "Installing Samba..." "$BLUE"
         dnf install -y samba
@@ -208,7 +216,7 @@ case "$ID" in
         # Terminal multiplexer (allows splitting sessions, very useful via SSH)
         dnf install -y tmux
 
-        mv ../config_files/tmux.conf /etc/tmux.conf
+        mv ../config_files/.tmux.conf /etc/.tmux.conf
 
         # Fast file searcher with database
         dnf install -y mlocate
@@ -270,7 +278,10 @@ case "$ID" in
         zypper install -y apache2 mariadb mariadb-client
         zypper install -y apache2-mod_ssl
         systemctl restart apache2
-        zypper install -y php7 php7-mysql php7-cli php7-curl php7-xml php7-mbstring php7-gd php7-intl
+        zypper install -y php7 php7-mysql php7-cli php7-curl php7-xml php7-mbstring php7-gd php7-intl php7-imap php7-json php7-opcache
+        zypper install nfs-kernel-server -y
+        systemctl enable --now nfs-server
+
 
         /usr/bin/mysql_secure_installation
 
@@ -333,7 +344,7 @@ case "$ID" in
         zypper install -y net-tools        # Classic network tools
         zypper install -y mc               # Midnight Commander file manager
         zypper install -y tmux             # Terminal multiplexer
-        mv ../config_files/tmux.conf /etc/tmux.conf
+        mv ../config_files/.tmux.conf /etc/.tmux.conf
         zypper install -y mlocate          # Fast file searcher
         updatedb                        # Update file search database
         zypper install -y git nodejs npm python3 python3-pip   # Development tools
