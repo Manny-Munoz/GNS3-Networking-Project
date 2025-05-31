@@ -102,13 +102,20 @@ Each regional router is connected to the central router through a `f2/0` interfa
 
 These servers were configured using the [installation script](scripts/install_dependencies.sh), which automates the installation of packages and services such as Apache, MariaDB, PHP, DNS, DHCP, among others.
 
-## 📃 Included Files
+# 📃 Included Files
 
-| File                          | Description                                                         |
-| ----------------------------- | ------------------------------------------------------------------- |
-| [configure_static_network.sh](scripts/configure_static_network.sh)   | Complete configurations of the Cisco routers used                   |
-| [install_dependencies.sh](scripts/install_dependencies.sh) | Automated script to configure services on Linux servers             |
-| [vm_config.md](vm_config.md)                | Documentation of the VMs used (ISOs, versions, configuration)       |
+| File                                              | Description                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------- |
+| [configure_static_network.sh](scripts/configure_static_network.sh) | Complete configurations of the Cisco routers used                   |
+| [install_dependencies.sh](scripts/install_dependencies.sh)         | Automated script to configure services on Linux servers             |
+| [install_cms.sh](scripts/install_cms.sh)                         | Script to automate CMS database/user creation and SQL import        |
+| [generate_ssl_certs.sh](scripts/generate_ssl_certs.sh)           | Script to generate SSL certificates and Apache virtual hosts        |
+| [setup_file_server.sh](scripts/setup_file_server.sh)             | Script to configure SFTP/NFS file server                            |
+| [create_user.sql](config_files/create_user.sql)                  | SQL template for creating CMS database and user                     |
+| [named.conf.zones](config_files/named.conf.zones)                | DNS zone configuration file                                         |
+| [named.conf.options](config_files/named.conf.options)            | DNS options configuration file                                      |
+| [db.example.com](config_files/db.example.com)                    | Example DNS zone file                                               |
+| [vm_config.md](vm_config.md)                                     | Documentation of the VMs used (ISOs, versions, configuration)       |
 
 ## 🔗 External Connection
 
@@ -534,6 +541,156 @@ The script [`setup_file_server.sh`](./scripts/setup_file_server.sh) allows you t
     ```
 
 See the script itself for additional details or customization options.
+
+---
+
+### 8. Install and Initialize CMS Databases (Joomla/WordPress)
+
+The script [`install_cms.sh`](./scripts/install_cms.sh) automates the creation of the database and user for your CMS, and imports the initial SQL data for Joomla or WordPress depending on the selected region.
+
+#### Usage
+
+1. **Make the script executable and run it as root:**
+   ```bash
+   sudo chmod +x ./scripts/install_cms.sh
+   sudo ./scripts/install_cms.sh
+   ```
+
+2. **Follow the interactive prompts:**
+   - **Which server are you using?**  
+     Enter the region code: `gt`, `cr`, `us`, or `mx`.
+     - `gt` will install Joomla (using `joomla_gt.sql`)
+     - `us` will install WordPress (using `wordpress_us.sql`)
+     - `cr` and `mx` can be customized (see script for details)
+   - **Database user to create:**  
+     Enter the desired database username.
+   - **Database name to create:**  
+     Enter the desired database name.
+   - **Enter the password for user:**  
+     Enter a strong password for the database user.
+
+3. **The script will:**
+   - Create the database and user with the provided credentials.
+   - Import the corresponding SQL file for Joomla or WordPress, initializing the CMS database.
+
+#### Example
+
+```bash
+sudo chmod +x ./scripts/install_cms.sh
+sudo ./scripts/install_cms.sh
+```
+```
+Which server are you using? (gt, cr, us, mx)
+gt
+Database user to create:
+joomlauser
+Database name to create:
+joomladb
+Enter the password for user joomlauser:
+[hidden]
+```
+
+After completion, your CMS database will be ready for use.
+
+**Note:**  
+- The script expects the SQL files to be located in the `cms/GT/` or `cms/US/` directories (relative to the script).
+- You can customize the SQL files or add new ones for other regions as needed.
+
+For more details, see the comments in the [`install_cms.sh`](./scripts/install_cms.sh) script.
+
+---
+
+### 9. Setup SSH Server
+
+Secure and reliable SSH access is essential for managing your servers remotely. This section explains how to set up SSH key authentication and use a configuration file for easier connections.
+
+#### 1. Basic SSH Access
+
+To connect to a server for the first time, use:
+
+```bash
+ssh <username>@<server_ip_or_domain>
+```
+
+- You will be prompted to accept the server's fingerprint—type `yes`.
+- Enter your password when prompted.
+
+#### 2. Generate SSH Keys
+
+For passwordless and more secure access, generate an SSH key pair on your client machine:
+
+```bash
+ssh-keygen
+```
+
+- You can set a passphrase for extra security.
+- By default, keys are stored in `~/.ssh/`.
+
+#### 3. Copy Your Public Key to the Server
+
+Add your public key to the server's authorized keys:
+
+```bash
+ssh-copy-id -i ~/.ssh/mykey.pub your_user@<server_ip_or_domain>
+```
+
+- Enter your password when prompted.
+- Now you can log in using your key (and passphrase, if set):
+
+```bash
+ssh -i ~/.ssh/mykey your_user@<server_ip_or_domain>
+```
+
+#### 4. Use an SSH Config File for Easy Connections
+
+A sample SSH config file (`ssh.config`) is provided in `config_files/`. This allows you to connect using simple host aliases.
+
+Copy it to your SSH directory:
+
+```bash
+mv config_files/ssh.config ~/.ssh/config
+```
+
+Now you can connect using just the host alias:
+
+```bash
+ssh mia-server
+```
+
+#### 5. SSH Server Security Recommendations
+
+After setting up users and keys, improve your server's SSH security by editing `/etc/ssh/sshd_config`:
+
+- **Enable public key authentication:**  
+  Uncomment or add:  
+  ```
+  PubkeyAuthentication yes
+  ```
+- **(Optional) Change the SSH port:**  
+  ```
+  Port 8022
+  ```
+  *Note: Changing the port is a minor security measure, but can reduce automated attacks on port 22.*
+- **Disable password authentication (key-only login):**  
+  ```
+  PasswordAuthentication no
+  ```
+- **Specify the authorized keys file:**  
+  ```
+  AuthorizedKeysFile .ssh/authorized_keys
+  ```
+- **Disable root login:**  
+  ```
+  PermitRootLogin no
+  ```
+
+After making changes, restart the SSH service:
+
+```bash
+sudo systemctl restart sshd
+```
+
+With these steps, you will have secure, convenient SSH access to all your servers.
 
 ---
 
