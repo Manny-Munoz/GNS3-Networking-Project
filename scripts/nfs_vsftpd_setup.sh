@@ -56,8 +56,37 @@ case "$DISTRO" in
     - User: quetzalftp
 EOF
     ;;
+  rocky|centos|rhel|almalinux|fedora)
 
-  opensuse*|suse|rocky|centos|rhel)
+    echo "Setting up NFS server on $DISTRO..."
+
+    if ! command -v exportfs &> /dev/null; then
+      echo "NFS utils not found. Please install nfs-utils."
+      exit 1
+    fi
+
+    mkdir -p "$MOUNT_DIR"
+    chown nobody:nobody"$MOUNT_DIR"
+
+    echo "$MOUNT_DIR *(rw,sync,no_subtree_check,no_root_squash)" >> /etc/exports
+    exportfs -ra
+    systemctl enable nfs-server
+    systemctl restart nfs-server
+
+    echo "NFS server configured."
+    cat <<EOF
+
+  Client usage (Linux):
+  sudo apt install nfs-common    # On Debian/Ubuntu
+  sudo mount -t nfs <server_ip>:${MOUNT_DIR} /mnt
+
+  To make it persistent:
+    Add this line to /etc/fstab:
+    <server_ip>:${MOUNT_DIR} /mnt nfs defaults 0 0
+EOF
+    ;;
+
+  opensuse*|suse)
     echo "Setting up NFS server on $DISTRO..."
 
     if ! command -v exportfs &> /dev/null; then

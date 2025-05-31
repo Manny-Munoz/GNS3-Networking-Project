@@ -86,13 +86,13 @@ case "$ID" in
         # basic auth with .htpasswd
         apt install libapache2-mod-authnz-external pwauth
 
-        a2enmod ssl
-        a2enmod authnz_external
+        /usr/sbin/a2enmod ssl
+        /usr/sbin/a2enmod authnz_external
         # Security tools
         apt install -y iptables fail2ban logrotate chkrootkit postfix
         # Monitoring and administration tools
         apt install -y htop vnstat iproute2 cron mailutils tmux
-        mv ../config_files/.tmux.conf /etc/.tmux.conf
+        mv ../config_files/.tmux.conf ~/.tmux.conf
         # Network tools
         apt install ipcalc
         # file management
@@ -101,7 +101,7 @@ case "$ID" in
         apt install -y squid docker.io
         # Development tools
         apt install -y git nodejs npm python3 python3-pip
-        apt install nfs-kernel-server -y
+        apt install -y nfs-kernel-server 
         systemctl enable --now nfs-server
         if [ "$ID" = "ubuntu" ]; then
             cecho "==> Running Ubuntu-specific commands" "$GREEN"
@@ -162,7 +162,7 @@ case "$ID" in
         cecho "Installing Apache, MariaDB and PHP..." "$BLUE"
         dnf install -y httpd mariadb-server mariadb
         dnf install -y mod_ssl 
-        dnf install -y php php-mysqlnd php-cli php-curl php-xml php-mbstring php-gd php-intl php-imap php-json php-common php-opcache
+        dnf install -y php php-mysqlnd php-gd php-xml php-mbstring
         systemctl restart httpd   # Rocky/CentOS/RHEL
 
         /usr/bin/mysql_secure_installation
@@ -184,7 +184,7 @@ case "$ID" in
 
         # Install NFS server 
         cecho "Installing NFS server..." "$BLUE"
-        dnf install nfs-utils -y
+        dnf install -y nfs-utils 
         systemctl enable --now nfs-server
 
         # Samba
@@ -205,7 +205,7 @@ case "$ID" in
 
 
         # Rootkit scanners (malware detection)
-        dnf install -y rkhunter chkrootkit
+        dnf install -y rkhunter 
 
         cecho "Installing system utilities..." "$BLUE"
 
@@ -224,7 +224,7 @@ case "$ID" in
         # Terminal multiplexer (allows splitting sessions, very useful via SSH)
         dnf install -y tmux
 
-        mv ../config_files/.tmux.conf /etc/.tmux.conf
+        mv ../config_files/.tmux.conf ~/.tmux.conf
 
         # Fast file searcher with database
         dnf install -y mlocate
@@ -288,21 +288,18 @@ case "$ID" in
         # Web + PHP + Database
         cecho "Installing Apache, MariaDB and PHP..." "$BLUE"
         zypper install -y apache2 mariadb mariadb-client
-        zypper install -y apache2-mod_ssl
+        /usr/sbin/a2enmod ssl
         systemctl restart apache2
-        zypper install -y php7 php7-mysql php7-cli php7-curl php7-xml php7-mbstring php7-gd php7-intl php7-imap php7-json php7-opcache
-        zypper install nfs-kernel-server -y
+        zypper install -y apache2 php php-mysql php-gd php-xml php-mbstring php-zlib 
+        systemctl enable apache2 --now
+        systemctl enable mariadb --now
+        systemctl start mariadb
+
+        zypper install -y nfs-kernel-server 
         systemctl enable --now nfs-server
 
 
         /usr/bin/mysql_secure_installation
-
-
-        # Composer
-        if ! command -v composer >/dev/null; then
-            cecho "Composer is not installed." "$RED"
-            exit 1
-        fi
 
         # SSL
         cecho "Installing OpenSSL and certificates..." "$BLUE"
@@ -332,8 +329,6 @@ case "$ID" in
 
         # Enable services
         cecho "Enabling services..." "$GREEN"
-        systemctl enable apache2 --now
-        systemctl enable mariadb --now
         systemctl enable smb --now
         systemctl enable vsftpd --now
 
@@ -350,13 +345,13 @@ case "$ID" in
 
         zypper install -y fail2ban         # Protection against brute force attacks
         zypper install -y logwatch         # System activity reports
-        zypper install -y rkhunter chkrootkit   # Rootkit scanners
+        zypper install -y rkhunter         # Rootkit scanners
         zypper install -y htop             # Interactive process monitor
         zypper install -y iftop            # Bandwidth monitor
         zypper install -y net-tools        # Classic network tools
         zypper install -y mc               # Midnight Commander file manager
         zypper install -y tmux             # Terminal multiplexer
-        mv ../config_files/.tmux.conf /etc/.tmux.conf
+        mv ../config_files/.tmux.conf ~/.tmux.conf
         zypper install -y mlocate          # Fast file searcher
         updatedb                        # Update file search database
         zypper install -y git nodejs npm python3 python3-pip   # Development tools
@@ -367,11 +362,7 @@ case "$ID" in
         # Network service utilities
         zypper addrepo https://download.opensuse.org/repositories/network:utilities/15.6/network:utilities.repo
         zypper refresh
-        zypper install ipcalc
-
-        cecho "Installing Composer..." "$BLUE"
-        zypper install -y curl unzip php7-cli
-        zypper install -y php-composer
+        zypper install -y ipcalc
 
         install_cms "joomla" "$URL_JOOMLA"
 

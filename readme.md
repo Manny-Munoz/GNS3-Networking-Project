@@ -158,6 +158,19 @@ Below is a summary of which interface connects each router and switch, to simpli
 
 ## 🚀 Usage
 
+### ⚠️ Network Troubleshooting for Rocky Linux
+
+If Rocky Linux does not have network connectivity at first boot, you may need to manually bring up the network interface. Run the following commands:
+
+```bash
+sudo nmcli device status
+sudo nmcli device connect eth0
+sudo nmcli connection up eth0
+```
+*(Replace `eth0` with your actual interface name, such as `ens3` or `enp1s0`.)*
+
+---
+
 ### 1. Execute the install_dependencies.sh script
 
 First, give execution permissions and run the script according to your OS.
