@@ -15,11 +15,11 @@ Este repositorio contiene una práctica completa para el diseño y configuració
 - [🔗 Conexión con el exterior](#-conexión-con-el-exterior)
 - [📚 Requisitos](#-requisitos)
 - [Documentación de Interfaces y Conexiones](#documentación-de-interfaces-y-conexiones)
+- [🚀 Uso](#-uso)
 - [🖥️ Documentación de Conexiones de Interfaces](#-documentación-de-conexiones-de-interfaces)
 - [⚖️ Licencia](#-licencia)
 
 ---
-
 
 ### 🔧 Captura de pantalla del proyecto en GNS3
 
@@ -108,7 +108,14 @@ Estos servidores fueron configurados usando el [script de instalación](scripts/
 |-------------------------------------------------|------------------------------------------------------------------|
 | [configure_static_network.sh](scripts/configure_static_network.sh) | Configuraciones completas de los routers Cisco utilizados        |
 | [install_dependencies.sh](scripts/install_dependencies.sh)         | Script automatizado para configurar servicios en servidores Linux |
-| [vm_config_es.md](vm_config_es.md)                                   | Documentación de las VMs utilizadas (ISOs, versiones, configuración) |
+| [install_cms.sh](scripts/install_cms.sh)                         | Script para automatizar la creación de bases de datos y usuarios para CMS |
+| [generate_ssl_certs.sh](scripts/generate_ssl_certs.sh)           | Script para generar certificados SSL y virtual hosts de Apache   |
+| [setup_file_server.sh](scripts/setup_file_server.sh)             | Script para configurar un servidor de archivos SFTP/NFS          |
+| [create_user.sql](config_files/create_user.sql)                  | Plantilla SQL para crear bases de datos y usuarios para CMS       |
+| [named.conf.zones](config_files/named.conf.zones)                | Archivo de configuración de zonas DNS                            |
+| [named.conf.options](config_files/named.conf.options)            | Archivo de configuración de opciones DNS                         |
+| [db.example.com](config_files/db.example.com)                    | Archivo de zona DNS de ejemplo                                   |
+| [vm_config_es.md](vm_config_es.md)                                     | Documentación de las máquinas virtuales utilizadas               |
 
 ## 🔗 Conexión con el exterior
 
@@ -150,22 +157,58 @@ A continuación se muestra un resumen de qué interfaz conecta cada router y swi
 
 ## 🚀 Uso
 
+### ⚠️ Solución de Problemas de Red en Rocky Linux
+
+Si Rocky Linux no tiene conectividad de red al iniciar por primera vez, es posible que debas activar manualmente la interfaz de red. Ejecuta los siguientes comandos:
+
+```bash
+sudo nmcli device status
+sudo nmcli device connect eth0
+sudo nmcli connection up eth0
+```
+*(Reemplaza `eth0` con el nombre real de tu interfaz, como `ens3` o `enp1s0`.)*
+
+---
+
 ### 1. Ejecutar el script install_dependencies.sh
 
 Primero, da permisos de ejecución y ejecuta el script según tu sistema operativo.
 
 **Para Ubuntu/Rocky/openSUSE:**
 ```bash
-sudo chmod +x install_dependencies.sh
-sudo install_dependencies.sh
+sudo chmod +x ./scripts/install_dependencies.sh
+sudo ./scripts/install_dependencies.sh
 ```
 
 **Para Debian:**
 ```bash
 su -
-chmod +x install_dependencies.sh
-install_dependencies.sh
+chmod +x ./scripts/install_dependencies.sh
+./scripts/install_dependencies.sh
 ```
+
+---
+
+#### ⚠️ Prompts Interactivos Durante la Instalación
+
+Mientras ejecutas el script, deberás responder algunas preguntas para configurar MySQL/MariaDB:
+
+**Instalación Segura de MySQL (`mysql_secure_installation`):**
+
+- **Enter current password for root (enter for none):**  
+  Solo presiona Enter (no hay contraseña configurada por defecto).
+- **Switch to unix_socket authentication?**  
+  Responde **no** (usar unix_socket puede ser un problema de seguridad más adelante).
+- **Change the root password?**  
+  Responde **sí** y establece una contraseña segura para root.
+- **Remove anonymous users?**  
+  Responde **sí**.
+- **Disallow root login remotely?**  
+  Responde **sí**.
+- **Remove test database and access to it?**  
+  Responde **sí**.
+- **Reload privilege tables now?**  
+  Responde **sí**.
 
 ---
 
@@ -173,15 +216,15 @@ install_dependencies.sh
 
 **Para Ubuntu/Rocky/openSUSE:**
 ```bash
-sudo chmod +x configure_static_network.sh
-sudo configure_static_network.sh
+sudo chmod +x ./scripts/configure_static_network.sh
+sudo ./scripts/configure_static_network.sh
 ```
 
 **Para Debian:**
 ```bash
 su -
-chmod +x configure_static_network.sh
-configure_static_network.sh
+chmod +x ./scripts/configure_static_network.sh
+./scripts/configure_static_network.sh
 ```
 
 ---
@@ -275,7 +318,53 @@ Después de hacer los cambios, renombra el archivo para que coincida con la zona
       };
       ```
 
-Para más detalles, consulta los comentarios en los archivos `named.conf.zones` y `db.example.com`.
+#### 🔁 Agregar un Servidor DNS Secundario para Permitir Resolución Externa
+
+Para permitir que las consultas DNS se resuelvan fuera de la red (por ejemplo, resolviendo `google.com`), debes agregar un reenviador DNS secundario (como el `8.8.8.8` de Google) dentro del bloque `options`. Puedes usar el archivo proporcionado `named.conf.options` como plantilla para la configuración DNS. Después de editarlo (o si deseas usar la configuración predeterminada), mueve el archivo a la ubicación correcta:
+
+- **En Debian/Ubuntu:**
+    - Descomenta la línea de directorio apropiada en tu archivo de opciones:
+        ```conf
+        directory "/var/cache/bind";
+        ```
+    - Mueve tu archivo personalizado `named.conf.options` para reemplazar el existente:
+        ```bash
+        mv ./config_files/named.conf.options /bind/named.conf.options
+        ```
+    - Reinicia BIND para aplicar los cambios:
+        ```bash
+        sudo systemctl restart bind9
+        ```
+
+- **En Rocky Linux ntOS EL:**
+    - Abre `/etc/named.conf` y elimina cualquier bloque existente de `options { ... };`.
+    - Mueve tu archivo de configuración:
+        ```bash
+        mv ./named.conf.options /named/named.conf.options
+        ```
+    - Agrega la siguiente línea al final de `/etc/named.conf`:
+        ```
+        include "/var/named/named.conf.options";
+        ```
+    - Reinicia el servicio DNS:
+        ```bash
+        sudo systemctl restart named
+        ```
+
+- **En openSUSE:**
+    - Edita `/etc/named.conf` y elimina el bloque existente de `options { ... };`.
+    - Mueve tu archivo de configuración:
+        ```bash
+        mv ./named.conf.options /lib/named/named.conf.options
+        ```
+    - Agrega esta línea a `/etc/named.conf`:
+        ```
+        include "/var/lib/named/named.conf.options";
+        ```
+    - Reinicia el servicio DNS:
+        ```bash
+        sudo systemctl restart named
+        ```
 
 ---
 
@@ -408,13 +497,154 @@ sudo mv client.ntp.conf /etc/ntp.conf
 - Verifica el estado:
   ```bash
   sudo ntpq -p
-  sudo ntpstat
   ```
----
 
 Para más información, consulta la documentación y ejemplos en el directorio `./config_files/ntp/`.
 
 ---
+
+### 7. Configurar y Usar el Servidor de Archivos (SFTP/NFS)
+
+El script [`setup_file_server.sh`](./scripts/setup_file_server.sh) te permite configurar rápidamente un servidor de archivos compartidos utilizando SFTP (en Debian/Ubuntu) o NFS (en openSUSE/Rocky Linux).
+
+#### Uso
+
+1. **Haz el script ejecutable y ejecútalo como root:**
+   ```bash
+   sudo chmod +x ./scripts/setup_file_server.sh
+   sudo ./scripts/setup_file_server.sh
+   ```
+
+2. **Sigue los prompts interactivos:**
+   - Elige el directorio de montaje (por defecto es `/srv/fileshare` o especifica uno personalizado).
+   - El script detectará tu distribución y configurará automáticamente SFTP o NFS según corresponda.
+
+#### Acceso desde Clientes
+
+- **En Debian/Ubuntu (SFTP):**
+  - Usuario: `quetzalftp`
+  - Grupo: `ftpusers`
+  - Carpeta de subida: `upload`
+  - Conéctate desde Linux:
+    ```bash
+    sftp quetzalftp@<server_ip>
+    cd upload
+    put filename.txt
+    ```
+  - En FileZilla:
+    - Protocolo: SFTP
+    - Host: `<server_ip>`
+    - Usuario: `quetzalftp`
+
+- **En openSUSE/Rocky Linux (NFS):**
+  - Monta el directorio compartido desde el cliente:
+    ```bash
+    sudo apt install nfs-common    # En Debian/Ubuntu
+    sudo mount -t nfs <server_ip>:/srv/fileshare 
+    ```
+  - Para montar automáticamente al inicio, agrega lo siguiente a `/etc/fstab`:
+    ```
+    <server_ip>:/srv/fileshare    nfs  defaults  0  0
+    ```
+
+Consulta el script para obtener más detalles o opciones de personalización.
+
+---
+
+### 8. Configurar el Servidor SSH
+
+El acceso SSH seguro y confiable es esencial para administrar tus servidores de forma remota. Esta sección explica cómo configurar la autenticación con claves SSH y usar un archivo de configuración para conexiones más fáciles.
+
+#### 1. Acceso SSH Básico
+
+Para conectarte a un servidor por primera vez, utiliza:
+
+```bash
+ssh <usuario>@<ip_del_servidor_o_dominio>
+```
+
+- Se te pedirá que aceptes la huella digital del servidor; escribe `yes`.
+- Ingresa tu contraseña cuando se te solicite.
+
+#### 2. Generar Claves SSH
+
+Para un acceso más seguro y sin contraseña, genera un par de claves SSH en tu máquina cliente:
+
+```bash
+ssh-keygen
+```
+
+- Puedes establecer una frase de contraseña para mayor seguridad.
+- Por defecto, las claves se almacenan en `~/.ssh/`.
+
+#### 3. Copiar tu Clave Pública al Servidor
+
+Agrega tu clave pública al archivo de claves autorizadas del servidor:
+
+```bash
+ssh-copy-id -i ~/.ssh/mi_clave.pub tu_usuario@<ip_del_servidor_o_dominio>
+```
+
+- Ingresa tu contraseña cuando se te solicite.
+- Ahora puedes iniciar sesión utilizando tu clave (y frase de contraseña, si la configuraste):
+
+```bash
+ssh -i ~/.ssh/mi_clave tu_usuario@<ip_del_servidor_o_dominio>
+```
+
+#### 4. Usar un Archivo de Configuración SSH para Conexiones Fáciles
+
+Se proporciona un archivo de configuración SSH de ejemplo (`ssh.config`) en `config_files/`. Esto te permite conectarte utilizando alias simples para los hosts.
+
+Copia el archivo a tu directorio SSH:
+
+```bash
+mv config_files/ssh.config ~/.ssh/config
+```
+
+Ahora puedes conectarte utilizando solo el alias del host:
+
+```bash
+ssh mia-servidor
+```
+
+#### 5. Recomendaciones de Seguridad para el Servidor SSH
+
+Después de configurar usuarios y claves, mejora la seguridad de tu servidor SSH editando `/etc/ssh/sshd_config`:
+
+- **Habilitar la autenticación con clave pública:**  
+  Descomenta o agrega:  
+  ```
+  PubkeyAuthentication yes
+  ```
+- **(Opcional) Cambiar el puerto SSH:**  
+  ```
+  Port 8022
+  ```
+  *Nota: Cambiar el puerto es una medida de seguridad menor, pero puede reducir ataques automatizados en el puerto 22.*
+- **Deshabilitar la autenticación por contraseña (solo inicio con clave):**  
+  ```
+  PasswordAuthentication no
+  ```
+- **Especificar el archivo de claves autorizadas:**  
+  ```
+  AuthorizedKeysFile .ssh/authorized_keys
+  ```
+- **Deshabilitar el inicio de sesión como root:**  
+  ```
+  PermitRootLogin no
+  ```
+
+Después de realizar los cambios, reinicia el servicio SSH:
+
+```bash
+sudo systemctl restart sshd
+```
+
+Con estos pasos, tendrás acceso SSH seguro y conveniente a todos tus servidores.
+
+---
+
 
 ## 🖥️ Documentación de Conexiones de Interfaces
 
@@ -430,5 +660,3 @@ El README está disponible en:
 Este proyecto es para uso educativo y personal. Las imágenes de Cisco IOS y los sistemas operativos utilizados tienen sus propias licencias.
 
 ---
-
-> Para más detalles, consulta el archivo `configuracion_routers.txt` y el diagrama visual en la carpeta `diagramas/`.

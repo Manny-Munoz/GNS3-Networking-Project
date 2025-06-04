@@ -155,7 +155,6 @@ Below is a summary of which interface connects each router and switch, to simpli
 - All servers and workstations connect to their respective regional switch.
 - The "Cloud" node in GNS3 represents the Internet connection.
 
-
 ## 🚀 Usage
 
 ### ⚠️ Network Troubleshooting for Rocky Linux
@@ -192,7 +191,7 @@ chmod +x ./scripts/install_dependencies.sh
 
 #### ⚠️ Interactive Prompts During Installation
 
-While running the script, you will need to answer some questions to set up MySQL/MariaDB and Kerberos:
+While running the script, you will need to answer some questions to set up MySQL/MariaDB:
 
 **MySQL Secure Installation (`mysql_secure_installation`):**
 
@@ -416,13 +415,10 @@ To enable HTTP Basic Authentication on any subdomain, add the following lines in
 
 See the script output for the exact path to your `.htpasswd` file.
 
----
-
 For more details, see the comments in the [`generate_ssl_certs.sh`](./scripts/generate_ssl_certs.sh) script.
 
 --- 
 
-For more details, see the comments in the `named.conf.zones` and `db.example.com` files.
 
 ### 6. Configure NTP Server and Clients
 
@@ -503,8 +499,6 @@ sudo mv client.ntp.conf /etc/ntp.conf
   sudo ntpq -p
   ```
 
----
-
 For more information, see the documentation and examples in the `./config_files/ntp/` directory.
 
 ---
@@ -557,63 +551,7 @@ See the script itself for additional details or customization options.
 
 ---
 
-### 8. Install and Initialize CMS Databases (Joomla/WordPress)
-
-The script [`install_cms.sh`](./scripts/install_cms.sh) automates the creation of the database and user for your CMS, and imports the initial SQL data for Joomla or WordPress depending on the selected region.
-
-#### Usage
-
-1. **Make the script executable and run it as root:**
-   ```bash
-   sudo chmod +x ./scripts/install_cms.sh
-   sudo ./scripts/install_cms.sh
-   ```
-
-2. **Follow the interactive prompts:**
-   - **Which server are you using?**  
-     Enter the region code: `gt`, `cr`, `us`, or `mx`.
-     - `gt` will install Joomla (using `joomla_gt.sql`)
-     - `us` will install WordPress (using `wordpress_us.sql`)
-     - `cr` and `mx` can be customized (see script for details)
-   - **Database user to create:**  
-     Enter the desired database username.
-   - **Database name to create:**  
-     Enter the desired database name.
-   - **Enter the password for user:**  
-     Enter a strong password for the database user.
-
-3. **The script will:**
-   - Create the database and user with the provided credentials.
-   - Import the corresponding SQL file for Joomla or WordPress, initializing the CMS database.
-
-#### Example
-
-```bash
-sudo chmod +x ./scripts/install_cms.sh
-sudo ./scripts/install_cms.sh
-```
-```
-Which server are you using? (gt, cr, us, mx)
-gt
-Database user to create:
-joomlauser
-Database name to create:
-joomladb
-Enter the password for user joomlauser:
-[hidden]
-```
-
-After completion, your CMS database will be ready for use.
-
-**Note:**  
-- The script expects the SQL files to be located in the `cms/GT/` or `cms/US/` directories (relative to the script).
-- You can customize the SQL files or add new ones for other regions as needed.
-
-For more details, see the comments in the [`install_cms.sh`](./scripts/install_cms.sh) script.
-
----
-
-### 9. Setup SSH Server
+### 8. Setup SSH Server
 
 Secure and reliable SSH access is essential for managing your servers remotely. This section explains how to set up SSH key authentication and use a configuration file for easier connections.
 
@@ -716,8 +654,6 @@ README is available in:
 
 * English 🇺🇸 *(You are here)*
 * [Español 🇪🇸](readme_es.md)
- 
-
 
 ## ⚖️ License
 
