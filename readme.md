@@ -657,6 +657,9 @@ README is available in:
 
 ## ⚖️ License
 
-This project is for educational and personal use. The Cisco IOS images and the operating systems used have their own licenses.
+This project is licensed under the following terms:
 
----
+- **Scripts and code**: Licensed under GNU General Public License v3.0 (GPL-3.0). See the `LICENSE` file for details.
+- **Documentation**: Licensed under Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0). See the `LICENSE` file for details.
+
+Note: The operating systems and Cisco IOS images referenced in this project are not included and are subject to their own licensing terms.
